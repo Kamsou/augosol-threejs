@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Augosol — Trouvez la pension idéale pour votre cheval</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@100;300;400;700&family=Unbounded:wght@200;400;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+
+<body>
+  <canvas class="webgl"></canvas>
+
+  <div id="loading-screen" class="overlay">
+    <div class="loading-content">
+      <div class="loading-glow" id="loading-glow"></div>
+      <img src="/logo-augosol.png" alt="Augosol" class="loading-logo" />
+      <div class="loading-counter" id="loading-counter">
+        <span class="loading-number" id="loading-number">0</span>
+      </div>
+      <div class="loading-line-track">
+        <div class="loading-line" id="loading-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="welcome-screen" class="overlay hidden">
+    <div class="welcome-content">
+      <img src="/logo-augosol.png" alt="Augosol" class="welcome-logo" />
+
+      <h1 class="welcome-headline">
+        <span class="headline-line">Trouvez la pension</span>
+        <span class="headline-line headline-accent">idéale pour votre cheval</span>
+      </h1>
+
+      <p class="welcome-tagline">Explorez librement 6 pensions et découvrez celles qui respectent vraiment le bien-être
+        équin.</p>
+
+      <div class="controls-row desktop-only">
+        <div class="control-hint"><span class="key-inline">&#x2190; &#x2191; &#x2193; &#x2192;</span> Se déplacer</div>
+        <span class="control-sep"></span>
+        <div class="control-hint"><span class="key-inline">Shift</span> Galoper</div>
+        <span class="control-sep"></span>
+        <div class="control-hint"><span class="key-inline">E</span> Interagir</div>
+      </div>
+
+      <div class="controls-row mobile-only">
+        <div class="control-hint">Joystick pour se déplacer</div>
+        <span class="control-sep"></span>
+        <div class="control-hint">Boutons galop &amp; interaction</div>
+      </div>
+
+      <button id="start-btn" class="btn-start">
+        <span class="btn-text">Commencer l'exploration</span>
+        <span class="btn-arrow">&rarr;</span>
+      </button>
+
+      <p class="welcome-footer">6 pensions &middot; Toutes ne se valent pas</p>
+    </div>
+  </div>
+
+  <div id="hud" class="hud hidden">
+    <div id="minimap" class="minimap">
+      <canvas id="minimap-canvas"></canvas>
+      <div class="minimap-ring"></div>
+      <div class="minimap-cardinal minimap-n" id="minimap-north">N</div>
+    </div>
+    <div id="speed-indicator" class="speed-indicator"></div>
+  </div>
+
+  <div id="quest-banner" class="quest-banner hidden">
+    <div class="quest-banner-inner">
+      <span class="quest-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+          <circle cx="12" cy="10" r="3" />
+        </svg>
+      </span>
+      <div class="quest-text-group">
+        <span id="quest-step" class="quest-step"></span>
+        <span id="quest-text" class="quest-text-main"></span>
+      </div>
+    </div>
+    <div class="quest-shimmer"></div>
+  </div>
+
+  <div id="touch-controls" class="touch-controls hidden">
+    <div id="joystick-zone" class="joystick-zone">
+      <div class="joystick-base" id="joystick-base">
+        <div class="joystick-thumb" id="joystick-thumb"></div>
+      </div>
+    </div>
+    <div class="touch-buttons">
+      <div class="touch-btn-group">
+        <button id="touch-gallop" class="touch-btn touch-gallop">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M13 2L9 10h5l-4 10 8-12h-5l4-8z" fill="currentColor" opacity="0.85" />
+          </svg>
+        </button>
+        <span class="touch-btn-label">Galop</span>
+      </div>
+      <div class="touch-btn-group">
+        <button id="touch-interact" class="touch-btn touch-interact">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none" />
+            <path d="M5 19c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+              fill="none" />
+          </svg>
+        </button>
+        <span class="touch-btn-label">Interagir</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="interaction-prompt" class="interaction-prompt hidden">
+    <span class="key-hint">E</span>
+    <span id="prompt-text">Decouvrir</span>
+  </div>
+
+  <div id="location-panel" class="location-panel hidden">
+    <div class="panel-content">
+      <div class="panel-header">
+        <div class="panel-icon" id="panel-icon"></div>
+        <div>
+          <h2 id="panel-name"></h2>
+          <div id="panel-ethical-badge" class="ethical-badge"></div>
+        </div>
+      </div>
+      <p id="panel-description" class="panel-description"></p>
+      <div class="panel-features" id="panel-features"></div>
+      <div class="panel-actions">
+        <button id="btn-choose" class="btn-choose">Choisir cette pension</button>
+        <button id="btn-continue" class="btn-continue">Continuer l'exploration</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="celebration-screen" class="overlay hidden">
+    <div class="celebration-content">
+      <div class="celebration-glow" id="celebration-glow"></div>
+      <div class="celebration-icon" id="celebration-icon"></div>
+      <h1 id="celebration-title"></h1>
+      <p id="celebration-text"></p>
+      <button id="btn-restart" class="btn-start">
+        <span class="btn-text">Réessayer</span>
+        <span class="btn-arrow">&rarr;</span>
+      </button>
+      <p class="celebration-footer" id="celebration-footer"></p>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
