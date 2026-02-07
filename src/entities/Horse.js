@@ -122,8 +122,18 @@ export default class Horse {
                 }
                 mat.map = textureCache[texPath]
               }
-              mat.roughness = mat.name === 'material' ? 0.2 : 0.8
-              mat.metalness = 0.0
+              const nameLower = mat.name.toLowerCase()
+              const isEye = nameLower.includes('eye') || nameLower.includes('iris')
+                || nameLower.includes('pupil') || nameLower.includes('cornea')
+              if (isEye) {
+                mat.roughness = 0.05
+                mat.metalness = 0.1
+                mat.emissive = new THREE.Color(0x221100)
+                mat.emissiveIntensity = 0.3
+              } else {
+                mat.roughness = mat.name === 'material' ? 0.2 : 0.6
+                mat.metalness = 0.0
+              }
               if (COAT_TINT[mat.name]) {
                 mat.color.copy(COAT_TINT[mat.name])
               }
