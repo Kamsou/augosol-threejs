@@ -3,7 +3,6 @@ import PensionLocation from './PensionLocation.js'
 
 export default class NaturePension extends PensionLocation {
   build() {
-    // Lush grass ground
     const grassGeo = new THREE.CircleGeometry(18, 24)
     grassGeo.rotateX(-Math.PI / 2)
     const grass = new THREE.Mesh(grassGeo, new THREE.MeshStandardMaterial({
@@ -12,7 +11,6 @@ export default class NaturePension extends PensionLocation {
     grass.position.y = 0.01
     this.group.add(grass)
 
-    // Trees around the perimeter
     const treeTypes = ['tree_pine', 'tree_oak', 'tree_birch']
     for (let i = 0; i < 18; i++) {
       const angle = (i / 18) * Math.PI * 2
@@ -41,7 +39,6 @@ export default class NaturePension extends PensionLocation {
       }
     }
 
-    // Pond with animated water shader
     const pondGeo = new THREE.CircleGeometry(4, 24)
     pondGeo.rotateX(-Math.PI / 2)
     this._pondMat = new THREE.ShaderMaterial({
@@ -85,7 +82,6 @@ export default class NaturePension extends PensionLocation {
     pond.position.set(3, 0.05, -2)
     this.group.add(pond)
 
-    // Rocks around pond
     const rockTypes = ['rock_1', 'rock_2', 'rock_3']
     for (let i = 0; i < 10; i++) {
       const angle = (i / 10) * Math.PI * 2
@@ -106,7 +102,6 @@ export default class NaturePension extends PensionLocation {
       }
     }
 
-    // Open shelter
     const shelterWood = new THREE.MeshStandardMaterial({ color: 0x6b4226, flatShading: true })
     const roofMat = new THREE.MeshStandardMaterial({ color: 0x4a3020, flatShading: true })
     const shelterPosts = [[-4, -6], [-4, -3], [-1, -6], [-1, -3]]
@@ -124,7 +119,6 @@ export default class NaturePension extends PensionLocation {
     roof.castShadow = true
     this.group.add(roof)
 
-    // Wooden fence with double rails
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B6914, flatShading: true })
     for (let i = 0; i < 16; i++) {
       const angle = (i / 16) * Math.PI * 2
@@ -140,7 +134,6 @@ export default class NaturePension extends PensionLocation {
         this.group.add(post)
       }
 
-      // Rails between posts
       if (i < 15) {
         const nextAngle = ((i + 1) / 16) * Math.PI * 2
         const ax = Math.cos(angle) * r, az = Math.sin(angle) * r
@@ -160,7 +153,6 @@ export default class NaturePension extends PensionLocation {
       }
     }
 
-    // Wildflowers
     for (let i = 0; i < 25; i++) {
       const a = Math.random() * Math.PI * 2
       const r = 2 + Math.random() * 11
@@ -178,7 +170,6 @@ export default class NaturePension extends PensionLocation {
       }
     }
 
-    // Grass clumps
     for (let i = 0; i < 12; i++) {
       const a = Math.random() * Math.PI * 2
       const r = 3 + Math.random() * 10
@@ -187,7 +178,6 @@ export default class NaturePension extends PensionLocation {
       }, Math.random() * Math.PI * 2, 0.5 + Math.random() * 0.5)
     }
 
-    // Bushes
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2
       const r = 10 + Math.random() * 3

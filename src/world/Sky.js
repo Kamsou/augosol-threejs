@@ -23,7 +23,6 @@ const fragmentShader = `
     float h = normalize(vWorldPosition + offset).y;
     float t = max(pow(max(h, 0.0), exponent), 0.0);
 
-    // Two-step gradient: bottom->mid->top
     vec3 color;
     if (t < 0.4) {
       color = mix(bottomColor, midColor, t / 0.4);
@@ -55,7 +54,6 @@ export default class Sky {
     this.mesh = new THREE.Mesh(geometry, material)
     scene.add(this.mesh)
 
-    // Warm atmospheric fog matching the Augosol palette
     scene.fog = new THREE.FogExp2(FOG_COLOR, FOG_DENSITY)
   }
 }

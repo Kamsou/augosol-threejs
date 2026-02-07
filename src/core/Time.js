@@ -11,7 +11,7 @@ export default class Time {
 
   _tick() {
     const currentTime = performance.now()
-    this.delta = Math.min(currentTime - this._previousTime, 50) // Cap at 50ms
+    this.delta = Math.min(currentTime - this._previousTime, 50)
     this._previousTime = currentTime
     this.elapsed += this.delta
 

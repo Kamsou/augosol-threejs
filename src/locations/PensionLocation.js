@@ -12,7 +12,6 @@ export default class PensionLocation {
     this.radius = INTERACTION_RADIUS
     this.assets = assetManager
 
-    // Snap to terrain height
     this.position.y = terrain.getHeightAt(this.position.x, this.position.z)
 
     this.group = new THREE.Group()
@@ -50,7 +49,6 @@ export default class PensionLocation {
   }
 
   _createBeacon() {
-    // Beacon — ethical pensions get a warm glow, unethical get dimmer/cooler
     const beaconGeo = new THREE.CylinderGeometry(0.3, 0.5, 40, 6)
     const beaconMat = new THREE.MeshBasicMaterial({
       color: this.color,
@@ -62,7 +60,6 @@ export default class PensionLocation {
     this.beacon.position.y = 20
     this.group.add(this.beacon)
 
-    // Beacon top glow
     const glowGeo = new THREE.SphereGeometry(this.ethical ? 1.0 : 0.6, 8, 6)
     const glowMat = new THREE.MeshBasicMaterial({
       color: this.color,
@@ -73,12 +70,10 @@ export default class PensionLocation {
     this.beaconGlow.position.y = 40
     this.group.add(this.beaconGlow)
 
-    // Point light for nearby illumination
     this.light = new THREE.PointLight(this.color, this.ethical ? 2 : 1, 30)
     this.light.position.y = 3
     this.group.add(this.light)
 
-    // Ground ring
     const ringGeo = new THREE.RingGeometry(this.radius - 0.5, this.radius, 32)
     ringGeo.rotateX(-Math.PI / 2)
     const ringMat = new THREE.MeshBasicMaterial({
@@ -93,13 +88,11 @@ export default class PensionLocation {
   }
 
   build() {
-    // Override in subclasses to add custom geometry
   }
 
   update(dt) {
     this._time += dt
 
-    // Beacon pulse
     const baseOpacity = this.ethical ? 0.12 : 0.06
     const pulse = baseOpacity + Math.sin(this._time * 2) * 0.05
     this.beacon.material.opacity = pulse
@@ -107,7 +100,6 @@ export default class PensionLocation {
     const glowBase = this.ethical ? 0.4 : 0.2
     this.beaconGlow.material.opacity = glowBase + Math.sin(this._time * 2.5) * 0.15
 
-    // Gentle glow bob
     this.beaconGlow.position.y = 40 + Math.sin(this._time * 1.5) * 0.5
   }
 

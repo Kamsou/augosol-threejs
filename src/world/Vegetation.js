@@ -151,7 +151,6 @@ export default class Vegetation {
       })
     }
 
-    // Base layer of simple grass blades for density
     const bladeGeo = new THREE.ConeGeometry(0.06, 0.4, 3)
     bladeGeo.translate(0, 0.2, 0)
     const bladeMat = new THREE.MeshStandardMaterial({
@@ -202,7 +201,6 @@ export default class Vegetation {
       })
     }
 
-    // Extra ambient tiny flowers for color
     const flowerGeo = new THREE.SphereGeometry(0.1, 4, 3)
     flowerGeo.translate(0, 0.25, 0)
     const flowerMat = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.7 })

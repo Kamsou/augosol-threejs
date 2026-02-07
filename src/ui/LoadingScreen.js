@@ -25,19 +25,15 @@ export default class LoadingScreen {
 
       const pct = Math.round(this._displayProgress * 100)
 
-      // Update number
       if (this.number) {
         this.number.textContent = pct
-        // Number gets more visible as progress increases
         this.number.style.opacity = 0.12 + this._displayProgress * 0.2
       }
 
-      // Update line
       if (this.line) {
         this.line.style.width = `${pct}%`
       }
 
-      // Update ambient glow — grows with progress
       if (this.glow) {
         const size = 200 + this._displayProgress * 250
         this.glow.style.width = `${size}px`
@@ -53,10 +49,8 @@ export default class LoadingScreen {
     if (this._raf) cancelAnimationFrame(this._raf)
 
     return new Promise(resolve => {
-      // Trigger staggered exit animations via CSS class
       this.element?.classList.add('exit')
 
-      // Wait for animations to finish, then fully hide
       setTimeout(() => {
         this.element?.classList.add('hidden')
         resolve()

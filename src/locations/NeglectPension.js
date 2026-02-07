@@ -6,7 +6,6 @@ export default class NeglectPension extends PensionLocation {
     const rotWoodMat = new THREE.MeshStandardMaterial({ color: 0x5a4a3a, flatShading: true, roughness: 1.0 })
     const rustMat = new THREE.MeshStandardMaterial({ color: 0x8a6a4a, flatShading: true, roughness: 0.9 })
 
-    // Muddy ground
     const mudGeo = new THREE.CircleGeometry(16, 12)
     mudGeo.rotateX(-Math.PI / 2)
     const mud = new THREE.Mesh(mudGeo, new THREE.MeshStandardMaterial({
@@ -15,7 +14,6 @@ export default class NeglectPension extends PensionLocation {
     mud.position.y = 0.01
     this.group.add(mud)
 
-    // Mud puddles
     for (let i = 0; i < 7; i++) {
       const puddle = new THREE.Mesh(
         new THREE.CircleGeometry(1.0 + Math.random() * 1.5, 8),
@@ -33,7 +31,6 @@ export default class NeglectPension extends PensionLocation {
       this.group.add(puddle)
     }
 
-    // Broken fence
     for (let i = 0; i < 14; i++) {
       const angle = (i / 14) * Math.PI * 2
       const r = 14
@@ -77,7 +74,6 @@ export default class NeglectPension extends PensionLocation {
       }
     }
 
-    // Dilapidated shelter
     const shelterGroup = new THREE.Group()
     shelterGroup.rotation.z = 0.08
 
@@ -102,7 +98,6 @@ export default class NeglectPension extends PensionLocation {
 
     this.group.add(shelterGroup)
 
-    // Tipped bucket
     const bucket = new THREE.Mesh(
       new THREE.CylinderGeometry(0.3, 0.25, 0.5, 6),
       rustMat
@@ -111,12 +106,10 @@ export default class NeglectPension extends PensionLocation {
     bucket.rotation.z = Math.PI / 3
     this.group.add(bucket)
 
-    // Empty feed trough
     const trough = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 0.5), rotWoodMat)
     trough.position.set(-5, 0.2, 4)
     this.group.add(trough)
 
-    // Scattered debris
     for (let i = 0; i < 12; i++) {
       const debris = new THREE.Mesh(
         new THREE.BoxGeometry(
@@ -135,7 +128,6 @@ export default class NeglectPension extends PensionLocation {
       this.group.add(debris)
     }
 
-    // Dead trees
     for (const pos of [{ x: 6, z: -5 }, { x: -8, z: -7 }]) {
       if (!this._placeAsset('dead_tree', { x: pos.x, y: 0, z: pos.z }, Math.random() * Math.PI, 0.7 + Math.random() * 0.3)) {
         const deadTrunk = new THREE.Mesh(
@@ -157,7 +149,6 @@ export default class NeglectPension extends PensionLocation {
       }
     }
 
-    // Sparse weedy grass at edges
     for (let i = 0; i < 6; i++) {
       const a = Math.random() * Math.PI * 2
       const r = 10 + Math.random() * 4
@@ -166,7 +157,6 @@ export default class NeglectPension extends PensionLocation {
       }, Math.random() * Math.PI * 2, 0.3 + Math.random() * 0.2)
     }
 
-    // Scattered rocks
     const rockTypes = ['rock_1', 'rock_2']
     for (let i = 0; i < 6; i++) {
       this._placeAsset(rockTypes[i % 2], {

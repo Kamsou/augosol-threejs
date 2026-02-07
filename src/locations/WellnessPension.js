@@ -7,7 +7,6 @@ export default class WellnessPension extends PensionLocation {
     const stoneMat = new THREE.MeshStandardMaterial({ color: 0x999990, flatShading: true, roughness: 0.9 })
     const sageMat = new THREE.MeshStandardMaterial({ color: 0x6b8e6b, flatShading: true })
 
-    // Grass ground
     const grassGeo = new THREE.CircleGeometry(18, 24)
     grassGeo.rotateX(-Math.PI / 2)
     const grass = new THREE.Mesh(grassGeo, new THREE.MeshStandardMaterial({
@@ -16,7 +15,6 @@ export default class WellnessPension extends PensionLocation {
     grass.position.y = 0.01
     this.group.add(grass)
 
-    // Herb garden — circular patches with bushes
     const herbColors = [0x4a7a3a, 0x6b9e5b, 0x8aaa7a, 0x5a8a4a]
     for (let i = 0; i < 6; i++) {
       const angle = (i / 6) * Math.PI * 2
@@ -50,7 +48,6 @@ export default class WellnessPension extends PensionLocation {
       }
     }
 
-    // Sand area
     const sandGeo = new THREE.CircleGeometry(3, 12)
     sandGeo.rotateX(-Math.PI / 2)
     const sand = new THREE.Mesh(sandGeo, new THREE.MeshStandardMaterial({
@@ -59,7 +56,6 @@ export default class WellnessPension extends PensionLocation {
     sand.position.set(-6, 0.02, -3)
     this.group.add(sand)
 
-    // Stone borders around sand
     const rockTypes = ['rock_1', 'rock_2', 'rock_3']
     for (let i = 0; i < 10; i++) {
       const angle = (i / 10) * Math.PI * 2
@@ -79,7 +75,6 @@ export default class WellnessPension extends PensionLocation {
       }
     }
 
-    // Treatment shelter
     const roofMat = new THREE.MeshStandardMaterial({ color: 0x4a3020, flatShading: true })
     const shelterPosts = [[5, -5], [5, -2], [9, -5], [9, -2]]
     for (const [sx, sz] of shelterPosts) {
@@ -96,7 +91,6 @@ export default class WellnessPension extends PensionLocation {
     roof.castShadow = true
     this.group.add(roof)
 
-    // Peripheral trees
     const treeTypes = ['tree_oak', 'tree_birch', 'tree_pine']
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2
@@ -106,7 +100,6 @@ export default class WellnessPension extends PensionLocation {
       }, Math.random() * Math.PI * 2, 0.6 + Math.random() * 0.4)
     }
 
-    // Lanterns on stone posts
     for (const pos of [{ x: 0, z: 0 }, { x: 7, z: -3 }, { x: -6, z: 5 }]) {
       const pole = new THREE.Mesh(
         new THREE.CylinderGeometry(0.06, 0.06, 1.5, 5),
@@ -127,12 +120,10 @@ export default class WellnessPension extends PensionLocation {
       this.group.add(light)
     }
 
-    // Meditation stones stacked
     for (let i = 0; i < 3; i++) {
       this._placeAsset(rockTypes[i], { x: 4, y: i * 0.3, z: 5 }, Math.random() * Math.PI, 0.12 + i * 0.05)
     }
 
-    // Flowering bushes
     for (const pos of [{ x: -3, z: 7 }, { x: 8, z: 4 }, { x: -8, z: 0 }, { x: 10, z: 2 }]) {
       if (!this._placeAsset('bush_1', pos, Math.random() * Math.PI * 2, 0.7)) {
         const bush = new THREE.Mesh(
@@ -152,7 +143,6 @@ export default class WellnessPension extends PensionLocation {
       }
     }
 
-    // Grass clumps
     for (let i = 0; i < 8; i++) {
       const a = Math.random() * Math.PI * 2
       const r = 8 + Math.random() * 8

@@ -1,16 +1,13 @@
 import * as THREE from 'three'
 
-// World
 export const WORLD_SIZE = 500
 export const TERRAIN_SEGMENTS = 128
 export const TERRAIN_HEIGHT_SCALE = 15
 export const TERRAIN_DETAIL_SCALE = 3
 
-// Fog
 export const FOG_COLOR = 0xe5d0b5
 export const FOG_DENSITY = 0.0018
 
-// Colors — Augosol brand palette
 export const COLORS = {
   sky: {
     top: new THREE.Color(0x5a7a9e),
@@ -26,7 +23,6 @@ export const COLORS = {
   ground: 0x68350B,
 }
 
-// Pension locations — 3 éthiques, 3 non-éthiques
 export const PENSIONS = {
   nature: {
     name: 'Le Pré Sauvage',
@@ -78,7 +74,6 @@ export const PENSIONS = {
   },
 }
 
-// Horse
 export const HORSE = {
   walkSpeed: 8,
   trotSpeed: 14,
@@ -89,7 +84,6 @@ export const HORSE = {
   backwardFactor: 0.6,
 }
 
-// Camera
 export const CAMERA = {
   fov: 55,
   near: 0.1,
@@ -100,30 +94,24 @@ export const CAMERA = {
   approachOffset: new THREE.Vector3(0, 5, 9),
 }
 
-// Interaction
 export const INTERACTION_RADIUS = 20
 export const APPROACH_RADIUS = 35
 
-// Asset manifest — all GLTF models with path, scale, yOffset
 export const ASSET_MANIFEST = {
-  // Trees
   tree_pine:   { path: '/models/nature/tree_pine.glb',   scale: 2.0, yOffset: 0 },
   tree_oak:    { path: '/models/nature/tree_oak.glb',    scale: 1.5, yOffset: 0 },
   tree_birch:  { path: '/models/nature/tree_birch.glb',  scale: 1.5, yOffset: 0 },
   dead_tree:   { path: '/models/nature/dead_tree.glb',   scale: 1.5, yOffset: 0 },
 
-  // Vegetation
   bush_1:      { path: '/models/nature/bush_1.glb',      scale: 0.8, yOffset: 0 },
   bush_2:      { path: '/models/nature/bush_2.glb',      scale: 0.8, yOffset: 0 },
   grass_clump: { path: '/models/nature/grass_clump.glb', scale: 0.4, yOffset: 0 },
   flower_1:    { path: '/models/nature/flower_1.glb',    scale: 0.5, yOffset: 0 },
   flower_2:    { path: '/models/nature/flower_2.glb',    scale: 0.5, yOffset: 0 },
 
-  // Rocks
   rock_1:      { path: '/models/nature/rock_1.glb',      scale: 1.0, yOffset: 0 },
   rock_2:      { path: '/models/nature/rock_2.glb',      scale: 1.0, yOffset: 0 },
   rock_3:      { path: '/models/nature/rock_3.glb',      scale: 1.0, yOffset: 0 },
 
-  // Buildings / structures
   fence_wood:  { path: '/models/buildings/fence_wood.glb', scale: 1.0, yOffset: 0 },
 }

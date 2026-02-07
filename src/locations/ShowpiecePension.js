@@ -9,7 +9,6 @@ export default class ShowpiecePension extends PensionLocation {
     const whiteMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, flatShading: true, roughness: 0.2 })
     const hedgeMat = new THREE.MeshStandardMaterial({ color: 0x2a5a2a, flatShading: true })
 
-    // Polished floor
     const floorGeo = new THREE.CircleGeometry(14, 20)
     floorGeo.rotateX(-Math.PI / 2)
     const floor = new THREE.Mesh(floorGeo, new THREE.MeshStandardMaterial({
@@ -18,7 +17,6 @@ export default class ShowpiecePension extends PensionLocation {
     floor.position.y = 0.01
     this.group.add(floor)
 
-    // Gravel border ring
     const borderGeo = new THREE.RingGeometry(14, 18, 24)
     borderGeo.rotateX(-Math.PI / 2)
     const border = new THREE.Mesh(borderGeo, new THREE.MeshStandardMaterial({
@@ -27,7 +25,6 @@ export default class ShowpiecePension extends PensionLocation {
     border.position.y = 0.005
     this.group.add(border)
 
-    // Topiaries at corners
     const hedgePositions = [
       { x: -9, z: -7 }, { x: 9, z: -7 }, { x: -9, z: 7 }, { x: 9, z: 7 },
       { x: -5, z: -9 }, { x: 5, z: -9 },
@@ -46,7 +43,6 @@ export default class ShowpiecePension extends PensionLocation {
       }
     }
 
-    // Hedge walls
     for (const wall of [
       { x: 0, z: -9, len: 8 },
       { x: 0, z: 9, len: 14 },
@@ -60,7 +56,6 @@ export default class ShowpiecePension extends PensionLocation {
       this.group.add(hedge)
     }
 
-    // Marble entrance pillars
     for (const side of [-1, 1]) {
       const pillar = new THREE.Mesh(
         new THREE.CylinderGeometry(0.4, 0.4, 3, 8),
@@ -75,7 +70,6 @@ export default class ShowpiecePension extends PensionLocation {
       this.group.add(ball)
     }
 
-    // Selfie arch
     const archMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, flatShading: true })
     const archLeft = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.5, 0.3), archMat)
     archLeft.position.set(-2, 1.75, 0)
@@ -96,7 +90,6 @@ export default class ShowpiecePension extends PensionLocation {
     ribbon.position.set(0, 3.2, 0.2)
     this.group.add(ribbon)
 
-    // Decorative flowers around the arch
     for (let i = 0; i < 10; i++) {
       const side = i < 5 ? -1 : 1
       const type = i % 2 === 0 ? 'flower_1' : 'flower_2'
@@ -107,7 +100,6 @@ export default class ShowpiecePension extends PensionLocation {
       }, Math.random() * Math.PI * 2, 0.3 + Math.random() * 0.3)
     }
 
-    // Colored lights — artificial
     const lightColors = [0xff44aa, 0x44aaff, 0xffaa00]
     for (let i = 0; i < 3; i++) {
       const angle = (i / 3) * Math.PI * 2
@@ -134,7 +126,6 @@ export default class ShowpiecePension extends PensionLocation {
       this.group.add(spotLight)
     }
 
-    // Display stands
     const standMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, flatShading: true, roughness: 0.2 })
     for (const pos of [{ x: -5, z: 3 }, { x: 5, z: 3 }]) {
       const stand = new THREE.Mesh(
@@ -145,7 +136,6 @@ export default class ShowpiecePension extends PensionLocation {
       this.group.add(stand)
     }
 
-    // Mirror/reflective panels
     const mirrorMat = new THREE.MeshStandardMaterial({
       color: 0xeeeeff, metalness: 0.8, roughness: 0.05, flatShading: true,
     })

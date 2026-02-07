@@ -26,7 +26,6 @@ export default class Terrain {
     this._displace()
     this.geometry.computeVertexNormals()
 
-    // Procedural terrain material — injects custom coloring into MeshStandardMaterial
     this.material = new THREE.MeshStandardMaterial({
       roughness: 0.9,
       metalness: 0.0,
@@ -39,7 +38,6 @@ export default class Terrain {
       shader.uniforms.uTerrainHigh = { value: new THREE.Color(0xa0b078) }
       shader.uniforms.uTerrainRock = { value: new THREE.Color(0xc4a87a) }
 
-      // Pension tinting data
       const pensionPositions = []
       const pensionColors = []
       for (const key of Object.keys(PENSIONS)) {
@@ -51,7 +49,6 @@ export default class Terrain {
       shader.uniforms.uPensionCol = { value: pensionColors }
       shader.uniforms.uPensionCount = { value: Object.keys(PENSIONS).length }
 
-      // Vertex shader — pass height and world position
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
         `#include <common>
@@ -65,7 +62,6 @@ export default class Terrain {
         vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;`
       )
 
-      // Fragment shader — procedural coloring
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <common>',
         `#include <common>
@@ -104,14 +100,11 @@ export default class Terrain {
 
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <color_fragment>',
-        `// Procedural terrain coloring
-        float h = clamp((vHeight + uHeightScale) / (uHeightScale * 2.0), 0.0, 1.0);
+        `float h = clamp((vHeight + uHeightScale) / (uHeightScale * 2.0), 0.0, 1.0);
 
-        // Organic noise variation
         float n = terrainFBM(vWorldPos.xz) * 0.2 - 0.1;
         h = clamp(h + n, 0.0, 1.0);
 
-        // 4-band height-based blending
         vec3 terrainColor;
         if (h < 0.3) {
           terrainColor = mix(uTerrainLow, uTerrainMid, h / 0.3);
@@ -121,11 +114,9 @@ export default class Terrain {
           terrainColor = mix(uTerrainHigh, uTerrainRock, clamp((h - 0.55) / 0.45, 0.0, 1.0));
         }
 
-        // Micro detail noise
         float micro = terrainNoise(vWorldPos.xz * 0.5) * 0.08 - 0.04;
         terrainColor += micro;
 
-        // Pension area tinting
         for (int i = 0; i < 6; i++) {
           if (i >= uPensionCount) break;
           float px = uPensionPos[i * 2];

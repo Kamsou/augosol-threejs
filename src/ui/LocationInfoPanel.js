@@ -37,7 +37,6 @@ export default class LocationInfoPanel {
       this.iconEl.textContent = ''
     }
 
-    // Ethical badge
     if (this.badgeEl) {
       if (config.ethical) {
         this.badgeEl.className = 'ethical-badge ethical'
@@ -48,7 +47,6 @@ export default class LocationInfoPanel {
       }
     }
 
-    // Features with ethical coloring
     if (this.featuresEl) {
       this.featuresEl.textContent = ''
       const tagClass = config.ethical ? 'ethical' : 'unethical'
@@ -60,7 +58,6 @@ export default class LocationInfoPanel {
       }
     }
 
-    // Button text based on ethical status
     if (this.btnChoose) {
       this.btnChoose.textContent = config.ethical
         ? 'Choisir cette pension'

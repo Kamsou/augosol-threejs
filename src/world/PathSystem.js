@@ -45,7 +45,6 @@ export default class PathSystem {
     const colors = []
     const indices = []
 
-    // Earthy color palette
     const centerColor = new THREE.Color(0xc4a060)
     const edgeColor = new THREE.Color(0x8a7040)
 
@@ -60,12 +59,10 @@ export default class PathSystem {
 
       const perp = new THREE.Vector3(-dir.z, 0, dir.x)
 
-      // Vary width slightly along the path
       const t = i / (points.length - 1)
       const widthNoise = 0.85 + Math.sin(t * 12) * 0.1 + Math.sin(t * 5.3) * 0.05
       const halfW = (baseWidth / 2) * widthNoise
 
-      // Slight terrain-following variation on edges
       const edgeJitter = Math.sin(i * 1.7) * 0.15
 
       vertices.push(
@@ -73,7 +70,6 @@ export default class PathSystem {
         p.x + perp.x * halfW, p.y - edgeJitter * 0.02, p.z + perp.z * halfW,
       )
 
-      // Edge darker, center lighter — color per vertex
       const variation = Math.random() * 0.04 - 0.02
       const leftCol = edgeColor.clone()
       leftCol.r += variation
@@ -92,10 +88,6 @@ export default class PathSystem {
       }
     }
 
-    // Add a center strip for lighter color
-    // Actually, let's blend: for each vertex pair, add center vertices
-    // Simpler: just use the two edge vertices with darker colors
-    // The vertex colors give natural edge-darkening when interpolated
 
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))

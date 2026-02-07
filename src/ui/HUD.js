@@ -3,7 +3,6 @@ export default class HUD {
     this.element = document.getElementById('hud')
     this.speedIndicator = document.getElementById('speed-indicator')
 
-    // Minimap
     this._canvas = document.getElementById('minimap-canvas')
     this._ctx = this._canvas ? this._canvas.getContext('2d') : null
     this._northLabel = document.getElementById('minimap-north')
@@ -45,32 +44,25 @@ export default class HUD {
     const half = size / 2
     const dpr = this._dpr
 
-    // Minimap shows a radius of 140 world units from the player
     const MAP_RADIUS = 140
     const scale = half / MAP_RADIUS
 
-    // Clear
     ctx.clearRect(0, 0, size, size)
 
-    // Clip to circle
     ctx.save()
     ctx.beginPath()
     ctx.arc(half, half, half, 0, Math.PI * 2)
     ctx.clip()
 
-    // Background
     ctx.fillStyle = 'rgba(42, 26, 14, 0.6)'
     ctx.fillRect(0, 0, size, size)
 
-    // Subtle terrain tint
     ctx.fillStyle = 'rgba(90, 120, 60, 0.08)'
     ctx.fillRect(0, 0, size, size)
 
-    // Rotate context for player-up orientation
     ctx.translate(half, half)
     ctx.rotate(horseRotation)
 
-    // Draw terrain boundary (500x500 centered at world origin)
     const worldHalf = 250
     const bx = -horsePos.x * scale
     const bz = -horsePos.z * scale
@@ -83,7 +75,6 @@ export default class HUD {
       worldHalf * 2 * scale
     )
 
-    // Draw location dots
     const now = Date.now()
     for (const loc of locations) {
       const dx = (loc.x - horsePos.x) * scale
@@ -92,7 +83,6 @@ export default class HUD {
       const isTarget = this._isQuestTarget(loc, questHint)
       const dotRadius = (isTarget ? 5 : 3.5) * dpr
 
-      // Quest target glow pulse
       if (isTarget) {
         const pulse = 0.25 + 0.25 * Math.sin(now * 0.004)
         ctx.beginPath()
@@ -103,21 +93,18 @@ export default class HUD {
         ctx.globalAlpha = 1.0
       }
 
-      // Dot fill
       ctx.beginPath()
       ctx.arc(dx, dz, dotRadius, 0, Math.PI * 2)
       ctx.fillStyle = loc.color
       ctx.fill()
 
-      // Dot border
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
       ctx.lineWidth = 1 * dpr
       ctx.stroke()
     }
 
-    ctx.restore() // undo rotation + clip
+    ctx.restore()
 
-    // Draw player arrow at center (unrotated, always pointing up)
     ctx.save()
     ctx.translate(half, half)
     const a = 8 * dpr
@@ -134,7 +121,6 @@ export default class HUD {
     ctx.stroke()
     ctx.restore()
 
-    // Position the "N" label on the ring edge
     if (this._northLabel) {
       const cssHalf = this._cssSize / 2
       const labelRadius = cssHalf + 9

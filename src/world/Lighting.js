@@ -24,17 +24,14 @@ export default class Lighting {
     scene.add(this.sun)
     scene.add(this.sun.target)
 
-    // Rim/back light - cool blue for depth separation
     this.rimLight = new THREE.DirectionalLight(0x88aacc, 0.35)
     this.rimLight.position.set(-30, 40, -20)
     scene.add(this.rimLight)
 
-    // Fill light - warm from below to soften shadows
     this.fillLight = new THREE.DirectionalLight(0xffeedd, 0.3)
     this.fillLight.position.set(-10, 5, 10)
     scene.add(this.fillLight)
 
-    // Warm ambient
     this.ambient = new THREE.AmbientLight(COLORS.ambient, 0.25)
     scene.add(this.ambient)
   }

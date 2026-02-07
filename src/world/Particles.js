@@ -53,7 +53,6 @@ export default class Particles {
   }
 
   _createFallingLeaves() {
-    // Use InstancedMesh instead of individual meshes for performance
     const leafCount = 20
     const leafGeo = new THREE.PlaneGeometry(0.25, 0.35)
     const leafMat = new THREE.MeshBasicMaterial({
@@ -97,7 +96,6 @@ export default class Particles {
   update(dt) {
     this._time += dt
 
-    // Ambient particles
     const positions = this.particles.geometry.attributes.position.array
     for (let i = 0; i < this._count; i++) {
       positions[i * 3 + 1] += Math.sin(this._time + i * 0.5) * 0.003
@@ -107,7 +105,6 @@ export default class Particles {
     this.particles.geometry.attributes.position.needsUpdate = true
     this.particles.material.opacity = 0.4 + Math.sin(this._time * 0.8) * 0.2
 
-    // Falling leaves — update InstancedMesh matrices
     const dummy = this._leafDummy
     const euler = this._leafEuler
     for (let i = 0; i < this._leafData.length; i++) {

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
 const POOL_SIZE = 40
-const EMIT_INTERVAL = 0.06 // seconds between bursts
+const EMIT_INTERVAL = 0.06
 
 export default class DustSystem {
   constructor(scene) {
@@ -64,7 +64,6 @@ export default class DustSystem {
   update(dt, horsePosition, speed) {
     const absSpeed = Math.abs(speed)
 
-    // Emit dust when moving fast enough
     if (absSpeed > 6) {
       this._emitTimer += dt
       const interval = absSpeed > 20 ? EMIT_INTERVAL * 0.5 : EMIT_INTERVAL
@@ -76,7 +75,6 @@ export default class DustSystem {
       this._emitTimer = 0
     }
 
-    // Update alive particles
     const posArr = this._points.geometry.attributes.position.array
     const sizeArr = this._points.geometry.attributes.size.array
     const alphaArr = this._points.geometry.attributes.alpha.array
@@ -94,13 +92,11 @@ export default class DustSystem {
         continue
       }
 
-      // Move
       posArr[i * 3] += p.vx * dt
       posArr[i * 3 + 1] += p.vy * dt
       posArr[i * 3 + 2] += p.vz * dt
-      p.vy -= 1.5 * dt // slight gravity
+      p.vy -= 1.5 * dt
 
-      // Fade out + grow
       sizeArr[i] = p.startSize * (1 + t * 2)
       alphaArr[i] = p.startAlpha * (1 - t)
     }
