@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import HorseController from './HorseController.js'
 import { BASE } from '../utils/Constants.js'
 
@@ -49,7 +50,7 @@ const COAT_TINT = {
 
 const ROOT_BONE_NAMES = ['root_04', 'pelvis_05']
 
-const TARGET_HEIGHT = 2.0
+const TARGET_HEIGHT = 5.0
 
 export default class Horse {
   constructor(scene, inputManager, terrain) {
@@ -73,21 +74,17 @@ export default class Horse {
   }
 
   async load() {
+    const dracoLoader = new DRACOLoader()
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/')
     const loader = new GLTFLoader()
+    loader.setDRACOLoader(dracoLoader)
 
     return new Promise((resolve, reject) => {
-      loader.load(BASE + 'models/horse_realistic/scene.gltf', (gltf) => {
+      loader.load(BASE + 'models/horse_realistic/horse_compressed.glb', (gltf) => {
         const model = gltf.scene
 
-        const box = new THREE.Box3()
-        model.traverse((child) => {
-          if (child.isMesh) {
-            child.geometry.computeBoundingBox()
-            const meshBox = child.geometry.boundingBox.clone()
-            meshBox.applyMatrix4(child.matrixWorld)
-            box.union(meshBox)
-          }
-        })
+        model.updateMatrixWorld(true)
+        const box = new THREE.Box3().setFromObject(model)
         const height = box.max.y - box.min.y
         if (height > 0) {
           const s = TARGET_HEIGHT / height
@@ -295,7 +292,7 @@ export default class Horse {
         const pick = IDLE_POOL[Math.floor(Math.random() * IDLE_POOL.length)]
         this._playAction(pick, 0.5)
       } else if (!this._currentActionName ||
-                 (!this._currentActionName.includes('Idle') && !this._currentActionName.includes('Fidget'))) {
+        (!this._currentActionName.includes('Idle') && !this._currentActionName.includes('Fidget'))) {
         this._playAction(ANIM.idle)
       }
     }
