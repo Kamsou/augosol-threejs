@@ -12,6 +12,8 @@ export default class WelcomeScreen {
     })
     if (this.startBtn) {
       this.startBtn.addEventListener('click', () => {
+        this.startBtn.blur()
+        document.activeElement?.blur()
         this.hide()
         this._onStart?.()
       }, { once: true })

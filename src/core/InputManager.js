@@ -62,7 +62,7 @@ export default class InputManager {
 
     let joystickActive = false
     let joystickCenter = { x: 0, y: 0 }
-    const maxRadius = 40
+    const maxRadius = 55
 
     const updateJoystick = (touchX, touchY) => {
       const rect = joystickZone.getBoundingClientRect()
@@ -85,7 +85,7 @@ export default class InputManager {
       const nx = dx / maxRadius
       const ny = dy / maxRadius
 
-      const deadZone = 0.25
+      const deadZone = 0.35
       this.analog.x = Math.abs(nx) > deadZone ? nx : 0
       this.analog.y = Math.abs(ny) > deadZone ? ny : 0
 
