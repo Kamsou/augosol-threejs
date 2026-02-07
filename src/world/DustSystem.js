@@ -58,6 +58,10 @@ export default class DustSystem {
     this._points.frustumCulled = false
     this.scene.add(this._points)
 
+    this._posArr = this._points.geometry.attributes.position.array
+    this._sizeArr = this._points.geometry.attributes.size.array
+    this._alphaArr = this._points.geometry.attributes.alpha.array
+    this._activeCount = 0
     this._emitTimer = 0
     this._nextIdx = 0
   }
@@ -76,10 +80,11 @@ export default class DustSystem {
       this._emitTimer = 0
     }
 
-    const posArr = this._points.geometry.attributes.position.array
-    const sizeArr = this._points.geometry.attributes.size.array
-    const alphaArr = this._points.geometry.attributes.alpha.array
+    const posArr = this._posArr
+    const sizeArr = this._sizeArr
+    const alphaArr = this._alphaArr
 
+    let active = 0
     for (let i = 0; i < POOL_SIZE; i++) {
       const p = this._particles[i]
       if (!p.alive) continue
@@ -93,6 +98,7 @@ export default class DustSystem {
         continue
       }
 
+      active++
       posArr[i * 3] += p.vx * dt
       posArr[i * 3 + 1] += p.vy * dt
       posArr[i * 3 + 2] += p.vz * dt
@@ -102,9 +108,13 @@ export default class DustSystem {
       alphaArr[i] = p.startAlpha * (1 - t)
     }
 
-    this._points.geometry.attributes.position.needsUpdate = true
-    this._points.geometry.attributes.size.needsUpdate = true
-    this._points.geometry.attributes.alpha.needsUpdate = true
+    this._activeCount = active
+    if (active > 0 || this._prevActive > 0) {
+      this._points.geometry.attributes.position.needsUpdate = true
+      this._points.geometry.attributes.size.needsUpdate = true
+      this._points.geometry.attributes.alpha.needsUpdate = true
+    }
+    this._prevActive = active
   }
 
   _emit(pos, speed) {
@@ -120,7 +130,7 @@ export default class DustSystem {
       p.startSize = 1.5 + Math.random() * 1.5
       p.startAlpha = 0.15 + Math.random() * 0.1
 
-      const posArr = this._points.geometry.attributes.position.array
+      const posArr = this._posArr
       posArr[i * 3] = pos.x + (Math.random() - 0.5) * 1.2
       posArr[i * 3 + 1] = pos.y + 0.1
       posArr[i * 3 + 2] = pos.z + (Math.random() - 0.5) * 1.2

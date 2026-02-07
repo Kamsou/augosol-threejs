@@ -194,6 +194,12 @@ export default class Horse {
     }
   }
 
+  _setTimeScale(value) {
+    if (this._currentAction && Math.abs(this._currentAction.timeScale - value) > 0.01) {
+      this._currentAction.timeScale = value
+    }
+  }
+
   _playAction(name, fadeDuration = 0.3) {
     if (name === this._currentActionName) return
     const newAction = this._actions[name]
@@ -262,33 +268,23 @@ export default class Horse {
 
     if (speed > 20) {
       this._playAction(ANIM.sprint)
-      if (this._currentAction) {
-        this._currentAction.timeScale = THREE.MathUtils.clamp(speed / 22, 0.8, 1.2)
-      }
+      this._setTimeScale(THREE.MathUtils.clamp(speed / 22, 0.8, 1.2))
       this._idleTimer = 0
     } else if (speed > 15) {
       this._playAction(ANIM.gallop)
-      if (this._currentAction) {
-        this._currentAction.timeScale = THREE.MathUtils.clamp(speed / 17, 0.7, 1.2)
-      }
+      this._setTimeScale(THREE.MathUtils.clamp(speed / 17, 0.7, 1.2))
       this._idleTimer = 0
     } else if (speed > 10) {
       this._playAction(ANIM.trot)
-      if (this._currentAction) {
-        this._currentAction.timeScale = THREE.MathUtils.clamp(speed / 12, 0.6, 1.1)
-      }
+      this._setTimeScale(THREE.MathUtils.clamp(speed / 12, 0.6, 1.1))
       this._idleTimer = 0
     } else if (speed > 0.3) {
       this._playAction(ANIM.walk)
-      if (this._currentAction) {
-        this._currentAction.timeScale = THREE.MathUtils.clamp(speed / 8, 0.5, 1.0)
-      }
+      this._setTimeScale(THREE.MathUtils.clamp(speed / 8, 0.5, 1.0))
       this._idleTimer = 0
     } else if (isTurning) {
       this._playAction(ANIM.walk)
-      if (this._currentAction) {
-        this._currentAction.timeScale = 0.35
-      }
+      this._setTimeScale(0.35)
       this._idleTimer = 0
     } else {
       this._idleTimer += dt

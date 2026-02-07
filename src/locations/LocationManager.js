@@ -43,6 +43,7 @@ export default class LocationManager {
 
     this._beaconTime = 0
     this._beaconFrame = 0
+    this._locationEntries = Object.entries(this.locations)
   }
 
   _createBeacon(color, ethical) {
@@ -117,7 +118,7 @@ export default class LocationManager {
     let closest = null
     let closestDist = Infinity
 
-    for (const [key, location] of Object.entries(this.locations)) {
+    for (const [key, location] of this._locationEntries) {
       location.update(dt)
 
       const dist = horsePosition.distanceTo(location.position)
@@ -151,7 +152,7 @@ export default class LocationManager {
   getLocationsWorldData() {
     if (this._worldDataCache) return this._worldDataCache
     const data = []
-    for (const [key, location] of Object.entries(this.locations)) {
+    for (const [key, location] of this._locationEntries) {
       const config = PENSIONS[key]
       data.push({
         key,

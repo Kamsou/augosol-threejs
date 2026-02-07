@@ -7,6 +7,9 @@ export default class WelcomeScreen {
 
   show() {
     this.element?.classList.remove('hidden')
+    requestAnimationFrame(() => {
+      this.element?.classList.add('active')
+    })
     if (this.startBtn) {
       this.startBtn.addEventListener('click', () => {
         this.hide()

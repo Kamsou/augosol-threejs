@@ -33,6 +33,7 @@ export default class Camera {
     this._shakeTime = 0
     this._smoothFov = CAMERA.fov
     this._smoothShakeIntensity = 0
+    this._targetSpeedRatio = 0
 
     this.sizes.on('resize', () => this.resize())
   }
@@ -105,10 +106,13 @@ export default class Camera {
       this.instance.updateProjectionMatrix()
     }
 
-    this._shakeTime += dt * (8 + this._smoothShakeIntensity * 12)
+    let shakeX = 0, shakeY = 0
     const shakeAmp = this._smoothShakeIntensity * 0.04
-    const shakeX = Math.sin(this._shakeTime * 1.1) * shakeAmp
-    const shakeY = Math.sin(this._shakeTime * 1.7) * shakeAmp * 0.6
+    if (shakeAmp > 0.0005) {
+      this._shakeTime += dt * (8 + this._smoothShakeIntensity * 12)
+      shakeX = Math.sin(this._shakeTime * 1.1) * shakeAmp
+      shakeY = Math.sin(this._shakeTime * 1.7) * shakeAmp * 0.6
+    }
 
     _yawQuat.setFromAxisAngle(_yAxis, this.target.rotation.y)
     this._smoothQuaternion.slerp(_yawQuat, 8.0 * dt)

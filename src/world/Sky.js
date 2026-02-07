@@ -52,6 +52,7 @@ export default class Sky {
     })
 
     this.mesh = new THREE.Mesh(geometry, material)
+    this.mesh.frustumCulled = false
     scene.add(this.mesh)
 
     scene.fog = new THREE.FogExp2(FOG_COLOR, FOG_DENSITY)
