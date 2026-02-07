@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 
+export const BASE = import.meta.env.BASE_URL
+
 export const WORLD_SIZE = 500
 export const TERRAIN_SEGMENTS = 128
 export const TERRAIN_HEIGHT_SCALE = 15
@@ -98,20 +100,20 @@ export const INTERACTION_RADIUS = 20
 export const APPROACH_RADIUS = 35
 
 export const ASSET_MANIFEST = {
-  tree_pine:   { path: '/models/nature/tree_pine.glb',   scale: 2.0, yOffset: 0 },
-  tree_oak:    { path: '/models/nature/tree_oak.glb',    scale: 1.5, yOffset: 0 },
-  tree_birch:  { path: '/models/nature/tree_birch.glb',  scale: 1.5, yOffset: 0 },
-  dead_tree:   { path: '/models/nature/dead_tree.glb',   scale: 1.5, yOffset: 0 },
+  tree_pine:   { path: BASE + 'models/nature/tree_pine.glb',   scale: 2.0, yOffset: 0 },
+  tree_oak:    { path: BASE + 'models/nature/tree_oak.glb',    scale: 1.5, yOffset: 0 },
+  tree_birch:  { path: BASE + 'models/nature/tree_birch.glb',  scale: 1.5, yOffset: 0 },
+  dead_tree:   { path: BASE + 'models/nature/dead_tree.glb',   scale: 1.5, yOffset: 0 },
 
-  bush_1:      { path: '/models/nature/bush_1.glb',      scale: 0.8, yOffset: 0 },
-  bush_2:      { path: '/models/nature/bush_2.glb',      scale: 0.8, yOffset: 0 },
-  grass_clump: { path: '/models/nature/grass_clump.glb', scale: 0.4, yOffset: 0 },
-  flower_1:    { path: '/models/nature/flower_1.glb',    scale: 0.5, yOffset: 0 },
-  flower_2:    { path: '/models/nature/flower_2.glb',    scale: 0.5, yOffset: 0 },
+  bush_1:      { path: BASE + 'models/nature/bush_1.glb',      scale: 0.8, yOffset: 0 },
+  bush_2:      { path: BASE + 'models/nature/bush_2.glb',      scale: 0.8, yOffset: 0 },
+  grass_clump: { path: BASE + 'models/nature/grass_clump.glb', scale: 0.4, yOffset: 0 },
+  flower_1:    { path: BASE + 'models/nature/flower_1.glb',    scale: 0.5, yOffset: 0 },
+  flower_2:    { path: BASE + 'models/nature/flower_2.glb',    scale: 0.5, yOffset: 0 },
 
-  rock_1:      { path: '/models/nature/rock_1.glb',      scale: 1.0, yOffset: 0 },
-  rock_2:      { path: '/models/nature/rock_2.glb',      scale: 1.0, yOffset: 0 },
-  rock_3:      { path: '/models/nature/rock_3.glb',      scale: 1.0, yOffset: 0 },
+  rock_1:      { path: BASE + 'models/nature/rock_1.glb',      scale: 1.0, yOffset: 0 },
+  rock_2:      { path: BASE + 'models/nature/rock_2.glb',      scale: 1.0, yOffset: 0 },
+  rock_3:      { path: BASE + 'models/nature/rock_3.glb',      scale: 1.0, yOffset: 0 },
 
-  fence_wood:  { path: '/models/buildings/fence_wood.glb', scale: 1.0, yOffset: 0 },
+  fence_wood:  { path: BASE + 'models/buildings/fence_wood.glb', scale: 1.0, yOffset: 0 },
 }

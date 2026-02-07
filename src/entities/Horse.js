@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import HorseController from './HorseController.js'
+import { BASE } from '../utils/Constants.js'
 
 const ANIM = {
   idle: 'Horse|AA Horse_Idle_01_Horse',
@@ -33,10 +34,10 @@ const IDLE_POOL = [
 ]
 
 const TEXTURE_MAP = {
-  'Body': '/models/horse_realistic/textures/Body_diffuse.png',
-  'Hair': '/models/horse_realistic/textures/Hair_diffuse.png',
-  'Material': '/models/horse_realistic/textures/Material_diffuse.png',
-  'material': '/models/horse_realistic/textures/Material_diffuse.png',
+  'Body': BASE + 'models/horse_realistic/textures/Body_diffuse.png',
+  'Hair': BASE + 'models/horse_realistic/textures/Hair_diffuse.png',
+  'Material': BASE + 'models/horse_realistic/textures/Material_diffuse.png',
+  'material': BASE + 'models/horse_realistic/textures/Material_diffuse.png',
 }
 
 const EQUIPMENT_MATERIALS = new Set(['Saddle_2', 'Material'])
@@ -75,7 +76,7 @@ export default class Horse {
     const loader = new GLTFLoader()
 
     return new Promise((resolve, reject) => {
-      loader.load('/models/horse_realistic/scene.gltf', (gltf) => {
+      loader.load(BASE + 'models/horse_realistic/scene.gltf', (gltf) => {
         const model = gltf.scene
 
         const box = new THREE.Box3()
