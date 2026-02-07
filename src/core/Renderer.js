@@ -27,10 +27,7 @@ export default class Renderer {
     this.instance.setPixelRatio(Math.min(this.sizes.pixelRatio, isMobile ? 1.0 : 2))
     this.instance.shadowMap.enabled = true
     this.instance.shadowMap.type = isMobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap
-    if (isMobile) {
-      this.instance.shadowMap.autoUpdate = false
-      this._shadowFrame = 0
-    }
+
     this.instance.toneMapping = THREE.ACESFilmicToneMapping
     this.instance.toneMappingExposure = 1.2
     this.instance.outputColorSpace = THREE.SRGBColorSpace
@@ -64,12 +61,6 @@ export default class Renderer {
   }
 
   update() {
-    if (this._shadowFrame !== undefined) {
-      this._shadowFrame++
-      if (this._shadowFrame % 4 === 0) {
-        this.instance.shadowMap.needsUpdate = true
-      }
-    }
     if (this.composer) {
       this.composer.render()
     } else {
