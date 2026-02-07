@@ -175,8 +175,32 @@ export default class Experience {
     const icon = document.getElementById('celebration-icon')
     const footer = document.getElementById('celebration-footer')
 
-    const checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'
-    const warnSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>'
+    const NS = 'http://www.w3.org/2000/svg'
+    const makeSvg = (pathD) => {
+      const svg = document.createElementNS(NS, 'svg')
+      svg.setAttribute('viewBox', '0 0 24 24')
+      svg.setAttribute('fill', 'none')
+      svg.setAttribute('stroke', 'currentColor')
+      svg.setAttribute('stroke-width', '2')
+      svg.setAttribute('stroke-linecap', 'round')
+      svg.setAttribute('stroke-linejoin', 'round')
+      const path = document.createElementNS(NS, 'path')
+      path.setAttribute('d', pathD)
+      svg.appendChild(path)
+      return svg
+    }
+
+    const setIcon = (iconEl, pathD, color) => {
+      iconEl.replaceChildren(makeSvg(pathD))
+      iconEl.style.background = color.replace('1)', '0.12)')
+      iconEl.style.color = color.replace('0.12)', '1)')
+      iconEl.style.border = `1px solid ${color.replace('0.12)', '0.25)')}`
+    }
+
+    const checkPath = 'M20 6L9 17l-5-5'
+    const warnPath = 'M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z'
+    const greenColor = 'rgba(34, 197, 94, 0.12)'
+    const amberColor = 'rgba(245, 158, 11, 0.12)'
 
     if (this.questState === 'quest2' && config.ethical) {
       this._completeQuests()
@@ -184,21 +208,21 @@ export default class Experience {
       if (text) text.textContent = `Vous avez choisi ${config.name}, un lieu où le bien-être du cheval passe avant tout. Vie sociale, liberté de mouvement et soins adaptés : votre cheval peut s'épanouir pleinement.`
       if (btnText) btnText.textContent = 'Rejouer'
       if (glow) glow.style.background = 'radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 70%)'
-      if (icon) { icon.innerHTML = checkSvg; icon.style.background = 'rgba(34, 197, 94, 0.12)'; icon.style.color = '#22c55e'; icon.style.border = '1px solid rgba(34, 197, 94, 0.25)' }
+      if (icon) setIcon(icon, checkPath, greenColor)
       if (footer) footer.textContent = 'Quête terminée. Merci d\'avoir joué'
     } else if (config.ethical) {
       if (title) { title.textContent = 'Bon choix !'; title.className = 'ethical-result' }
       if (text) text.textContent = `${config.name} respecte les besoins fondamentaux de votre cheval. Mais ce n'est pas la pension que vous cherchiez — continuez l'exploration pour accomplir votre quête.`
       if (btnText) btnText.textContent = 'Continuer'
       if (glow) glow.style.background = 'radial-gradient(circle, rgba(34, 197, 94, 0.08) 0%, transparent 70%)'
-      if (icon) { icon.innerHTML = checkSvg; icon.style.background = 'rgba(34, 197, 94, 0.12)'; icon.style.color = '#22c55e'; icon.style.border = '1px solid rgba(34, 197, 94, 0.25)' }
+      if (icon) setIcon(icon, checkPath, greenColor)
       if (footer) footer.textContent = 'Continuez à explorer le domaine'
     } else {
       if (title) { title.textContent = 'Attention'; title.className = 'unethical-result' }
       if (text) text.textContent = `${config.name} ne garantit pas le bien-être de votre cheval. ${config.description} D'autres pensions sauront mieux le respecter.`
       if (btnText) btnText.textContent = 'Continuer la recherche'
       if (glow) glow.style.background = 'radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%)'
-      if (icon) { icon.innerHTML = warnSvg; icon.style.background = 'rgba(245, 158, 11, 0.12)'; icon.style.color = '#f59e0b'; icon.style.border = '1px solid rgba(245, 158, 11, 0.25)' }
+      if (icon) setIcon(icon, warnPath, amberColor)
       if (footer) footer.textContent = 'Votre cheval mérite mieux'
     }
 

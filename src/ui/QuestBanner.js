@@ -28,6 +28,7 @@ export default class QuestBanner {
 
   _triggerShimmer() {
     if (!this.element) return
+    if (this._shimmerTimeout) clearTimeout(this._shimmerTimeout)
     this.element.classList.remove('shimmer-active')
     void this.element.offsetWidth
     this.element.classList.add('shimmer-active')
