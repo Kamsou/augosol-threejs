@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { ASSET_MANIFEST } from '../utils/Constants.js'
 
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
 export default class AssetManager {
   constructor() {
     this.loader = new GLTFLoader()
@@ -18,7 +20,7 @@ export default class AssetManager {
 
         scene.traverse(child => {
           if (child.isMesh) {
-            child.castShadow = true
+            child.castShadow = !isMobile
             child.receiveShadow = true
           }
         })
@@ -57,7 +59,7 @@ export default class AssetManager {
 
     clone.traverse(child => {
       if (child.isMesh) {
-        child.castShadow = true
+        child.castShadow = !isMobile
         child.receiveShadow = true
         if (Array.isArray(child.material)) {
           child.material = child.material.map(m => m.clone())

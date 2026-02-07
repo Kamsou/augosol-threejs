@@ -1073,11 +1073,13 @@ body {
   /* Interaction prompt — tappable on mobile */
   .interaction-prompt {
     bottom: 45%;
-    font-size: 1rem;
+    font-size: 0.85rem;
     pointer-events: auto;
     cursor: pointer;
     border: 1px solid rgba(245, 158, 11, 0.4);
     animation: promptPulse 2s ease-in-out infinite;
+    white-space: nowrap;
+    max-width: calc(100vw - 40px);
   }
   .key-hint { display: none; }
 

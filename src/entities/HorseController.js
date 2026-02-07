@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { HORSE, WORLD_SIZE } from '../utils/Constants.js'
 
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 const _forward = new THREE.Vector3()
 const _yAxis = new THREE.Vector3(0, 1, 0)
 
@@ -79,34 +80,50 @@ export default class HorseController {
     mesh.position.x = THREE.MathUtils.clamp(mesh.position.x, -limit, limit)
     mesh.position.z = THREE.MathUtils.clamp(mesh.position.z, -limit, limit)
 
-    _forward.set(0, 0, -1).applyAxisAngle(_yAxis, this.currentRotation)
     const cx = mesh.position.x
     const cz = mesh.position.z
-    const fx = cx + _forward.x * 1.2
-    const fz = cz + _forward.z * 1.2
-    const bx = cx - _forward.x * 1.2
-    const bz = cz - _forward.z * 1.2
 
-    const hCenter = this.terrain.getHeightAt(cx, cz)
-    const hFront = this.terrain.getHeightAt(fx, fz)
-    const hBack = this.terrain.getHeightAt(bx, bz)
+    if (isMobile) {
+      const groundY = this.terrain.getHeightAt(cx, cz) + 0.2
 
-    const groundY = Math.max(hCenter, hFront, hBack) + 0.2
+      if (!this._yInitialized) {
+        this._smoothY = groundY
+        this._yInitialized = true
+      }
 
-    if (!this._yInitialized) {
-      this._smoothY = groundY
-      this._yInitialized = true
+      this._smoothY = THREE.MathUtils.lerp(this._smoothY, groundY, 8 * dt)
+      mesh.position.y = this._smoothY
+
+      mesh.rotation.y = this.currentRotation
+      mesh.rotation.x = 0
+    } else {
+      _forward.set(0, 0, -1).applyAxisAngle(_yAxis, this.currentRotation)
+      const fx = cx + _forward.x * 1.2
+      const fz = cz + _forward.z * 1.2
+      const bx = cx - _forward.x * 1.2
+      const bz = cz - _forward.z * 1.2
+
+      const hCenter = this.terrain.getHeightAt(cx, cz)
+      const hFront = this.terrain.getHeightAt(fx, fz)
+      const hBack = this.terrain.getHeightAt(bx, bz)
+
+      const groundY = Math.max(hCenter, hFront, hBack) + 0.2
+
+      if (!this._yInitialized) {
+        this._smoothY = groundY
+        this._yInitialized = true
+      }
+
+      this._smoothY = THREE.MathUtils.lerp(this._smoothY, groundY, 8 * dt)
+      mesh.position.y = this._smoothY
+
+      const slopeDelta = hFront - hBack
+      const targetPitch = Math.atan2(slopeDelta, 2.4)
+      this._smoothPitch = THREE.MathUtils.lerp(this._smoothPitch, targetPitch, 4 * dt)
+
+      mesh.rotation.y = this.currentRotation
+      mesh.rotation.x = this._smoothPitch
     }
-
-    this._smoothY = THREE.MathUtils.lerp(this._smoothY, groundY, 8 * dt)
-    mesh.position.y = this._smoothY
-
-    const slopeDelta = hFront - hBack
-    const targetPitch = Math.atan2(slopeDelta, 2.4)
-    this._smoothPitch = THREE.MathUtils.lerp(this._smoothPitch, targetPitch, 4 * dt)
-
-    mesh.rotation.y = this.currentRotation
-    mesh.rotation.x = this._smoothPitch
 
     const analogTurn = this.input.analog?.x || 0
     const turning = analogTurn !== 0

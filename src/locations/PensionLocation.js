@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { INTERACTION_RADIUS } from '../utils/Constants.js'
 
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
 export default class PensionLocation {
   constructor(config, terrain, assetManager) {
     this.name = config.name
@@ -21,6 +23,7 @@ export default class PensionLocation {
 
     this._createBeacon()
     this._time = 0
+    this._frame = 0
   }
 
   _placeAsset(name, position, rotation = 0, scale = 1, tintColor = null) {
@@ -49,7 +52,7 @@ export default class PensionLocation {
   }
 
   _createBeacon() {
-    const beaconGeo = new THREE.CylinderGeometry(0.3, 0.5, 40, 6)
+    const beaconGeo = new THREE.CylinderGeometry(0.3, 0.5, 40, isMobile ? 4 : 6)
     const beaconMat = new THREE.MeshBasicMaterial({
       color: this.color,
       transparent: true,
@@ -60,7 +63,7 @@ export default class PensionLocation {
     this.beacon.position.y = 20
     this.group.add(this.beacon)
 
-    const glowGeo = new THREE.SphereGeometry(this.ethical ? 1.0 : 0.6, 8, 6)
+    const glowGeo = new THREE.SphereGeometry(this.ethical ? 1.0 : 0.6, isMobile ? 4 : 8, isMobile ? 3 : 6)
     const glowMat = new THREE.MeshBasicMaterial({
       color: this.color,
       transparent: true,
@@ -70,11 +73,13 @@ export default class PensionLocation {
     this.beaconGlow.position.y = 40
     this.group.add(this.beaconGlow)
 
-    this.light = new THREE.PointLight(this.color, this.ethical ? 2 : 1, 30)
-    this.light.position.y = 3
-    this.group.add(this.light)
+    if (!isMobile) {
+      this.light = new THREE.PointLight(this.color, this.ethical ? 2 : 1, 30)
+      this.light.position.y = 3
+      this.group.add(this.light)
+    }
 
-    const ringGeo = new THREE.RingGeometry(this.radius - 0.5, this.radius, 32)
+    const ringGeo = new THREE.RingGeometry(this.radius - 0.5, this.radius, isMobile ? 16 : 32)
     ringGeo.rotateX(-Math.PI / 2)
     const ringMat = new THREE.MeshBasicMaterial({
       color: this.color,
@@ -92,6 +97,8 @@ export default class PensionLocation {
 
   update(dt) {
     this._time += dt
+    this._frame++
+    if (isMobile && this._frame % 3 !== 0) return
 
     const baseOpacity = this.ethical ? 0.12 : 0.06
     const pulse = baseOpacity + Math.sin(this._time * 2) * 0.05

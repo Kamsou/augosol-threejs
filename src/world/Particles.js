@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
 export default class Particles {
   constructor(scene) {
     this.scene = scene
@@ -10,7 +12,7 @@ export default class Particles {
   }
 
   _createAmbientParticles() {
-    const count = 150
+    const count = isMobile ? 50 : 150
     const positions = new Float32Array(count * 3)
     const colors = new Float32Array(count * 3)
 
@@ -53,7 +55,7 @@ export default class Particles {
   }
 
   _createFallingLeaves() {
-    const leafCount = 20
+    const leafCount = isMobile ? 8 : 20
     const leafGeo = new THREE.PlaneGeometry(0.25, 0.35)
     const leafMat = new THREE.MeshBasicMaterial({
       color: 0x9a7b3a,

@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import PensionLocation from './PensionLocation.js'
 
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
 export default class ShowpiecePension extends PensionLocation {
   build() {
     const goldMat = new THREE.MeshStandardMaterial({
@@ -121,9 +123,11 @@ export default class ShowpiecePension extends PensionLocation {
       spotHead.position.set(lx, 3.5, lz)
       this.group.add(spotHead)
 
-      const spotLight = new THREE.PointLight(lightColors[i], 1.2, 15)
-      spotLight.position.set(lx, 3.5, lz)
-      this.group.add(spotLight)
+      if (!isMobile) {
+        const spotLight = new THREE.PointLight(lightColors[i], 1.2, 15)
+        spotLight.position.set(lx, 3.5, lz)
+        this.group.add(spotLight)
+      }
     }
 
     const standMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, flatShading: true, roughness: 0.2 })

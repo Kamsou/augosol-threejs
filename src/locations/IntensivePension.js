@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import PensionLocation from './PensionLocation.js'
 
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
 export default class IntensivePension extends PensionLocation {
   build() {
     const concreteMat = new THREE.MeshStandardMaterial({ color: 0x888888, flatShading: true, roughness: 1.0 })
@@ -118,9 +120,11 @@ export default class IntensivePension extends PensionLocation {
       spotHead.position.set(pos.x, 5, pos.z)
       this.group.add(spotHead)
 
-      const light = new THREE.PointLight(0xccccff, 1.0, 18)
-      light.position.set(pos.x, 5, pos.z)
-      this.group.add(light)
+      if (!isMobile) {
+        const light = new THREE.PointLight(0xccccff, 1.0, 18)
+        light.position.set(pos.x, 5, pos.z)
+        this.group.add(light)
+      }
     }
   }
 }

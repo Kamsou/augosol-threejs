@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 import { PENSIONS, INTERACTION_RADIUS, APPROACH_RADIUS } from '../utils/Constants.js'
+
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 import NaturePension from './NaturePension.js'
 import EthicalSportPension from './EthicalSportPension.js'
 import WellnessPension from './WellnessPension.js'
@@ -40,12 +42,13 @@ export default class LocationManager {
     }
 
     this._beaconTime = 0
+    this._beaconFrame = 0
   }
 
   _createBeacon(color, ethical) {
     const group = new THREE.Group()
 
-    const pillarGeo = new THREE.CylinderGeometry(0.15, 0.6, 20, 8, 1, true)
+    const pillarGeo = new THREE.CylinderGeometry(0.15, 0.6, 20, isMobile ? 4 : 8, 1, true)
     const pillarMat = new THREE.MeshBasicMaterial({
       color,
       transparent: true,
@@ -57,7 +60,7 @@ export default class LocationManager {
     pillar.position.y = 10
     group.add(pillar)
 
-    const ringGeo = new THREE.RingGeometry(2, 4, 24)
+    const ringGeo = new THREE.RingGeometry(2, 4, isMobile ? 12 : 24)
     ringGeo.rotateX(-Math.PI / 2)
     const ringMat = new THREE.MeshBasicMaterial({
       color,
@@ -70,7 +73,7 @@ export default class LocationManager {
     ring.position.y = 0.1
     group.add(ring)
 
-    const orbGeo = new THREE.SphereGeometry(0.4, 12, 8)
+    const orbGeo = new THREE.SphereGeometry(0.4, isMobile ? 6 : 12, isMobile ? 4 : 8)
     const orbMat = new THREE.MeshBasicMaterial({
       color,
       transparent: true,
@@ -80,9 +83,12 @@ export default class LocationManager {
     orb.position.y = 22
     group.add(orb)
 
-    const light = new THREE.PointLight(color, ethical ? 1.5 : 0.8, 30)
-    light.position.y = 22
-    group.add(light)
+    let light = null
+    if (!isMobile) {
+      light = new THREE.PointLight(color, ethical ? 1.5 : 0.8, 30)
+      light.position.y = 22
+      group.add(light)
+    }
 
     group.userData = { pillarMat, ringMat, orbMat, orb, light }
 
@@ -95,14 +101,17 @@ export default class LocationManager {
 
   update(dt, horsePosition) {
     this._beaconTime += dt
-    for (const beacon of this._beacons) {
-      const ud = beacon.userData
-      const pulse = 0.5 + Math.sin(this._beaconTime * 2) * 0.5
-      ud.pillarMat.opacity = 0.05 + pulse * 0.06
-      ud.ringMat.opacity = 0.08 + pulse * 0.08
-      ud.orbMat.opacity = 0.35 + pulse * 0.25
-      ud.orb.position.y = 22 + Math.sin(this._beaconTime * 1.5) * 0.5
-      ud.light.intensity = (ud.light.intensity > 1 ? 1.2 : 0.6) + pulse * 0.5
+    this._beaconFrame++
+    if (!isMobile || this._beaconFrame % 3 === 0) {
+      for (const beacon of this._beacons) {
+        const ud = beacon.userData
+        const pulse = 0.5 + Math.sin(this._beaconTime * 2) * 0.5
+        ud.pillarMat.opacity = 0.05 + pulse * 0.06
+        ud.ringMat.opacity = 0.08 + pulse * 0.08
+        ud.orbMat.opacity = 0.35 + pulse * 0.25
+        ud.orb.position.y = 22 + Math.sin(this._beaconTime * 1.5) * 0.5
+        if (ud.light) ud.light.intensity = (ud.light.intensity > 1 ? 1.2 : 0.6) + pulse * 0.5
+      }
     }
 
     let closest = null

@@ -1,3 +1,5 @@
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
 export default class HUD {
   constructor() {
     this.element = document.getElementById('hud')
@@ -7,13 +9,14 @@ export default class HUD {
     this._ctx = this._canvas ? this._canvas.getContext('2d') : null
     this._northLabel = document.getElementById('minimap-north')
     this._minimapEl = document.getElementById('minimap')
+    this._frame = 0
 
     this._setupCanvas()
   }
 
   _setupCanvas() {
     if (!this._canvas) return
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 2)
     const rect = this._canvas.parentElement.getBoundingClientRect()
     const cssSize = rect.width
     this._canvas.width = cssSize * dpr
@@ -32,7 +35,10 @@ export default class HUD {
   }
 
   update(horsePosition, horseRotation, movementState, locationWorldData, questHint = null) {
-    this._updateMinimap(horsePosition, horseRotation, locationWorldData, questHint)
+    this._frame++
+    if (!isMobile || this._frame % 4 === 0) {
+      this._updateMinimap(horsePosition, horseRotation, locationWorldData, questHint)
+    }
     this._updateSpeed(movementState)
   }
 

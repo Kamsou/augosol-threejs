@@ -11,7 +11,7 @@ export default class Lighting {
     this.sun = new THREE.DirectionalLight(COLORS.sun, 2.0)
     this.sun.position.set(40, 60, 25)
     this.sun.castShadow = true
-    const shadowRes = isMobile ? 1024 : 2048
+    const shadowRes = isMobile ? 512 : 2048
     this.sun.shadow.mapSize.set(shadowRes, shadowRes)
     this.sun.shadow.camera.near = 1
     this.sun.shadow.camera.far = 250

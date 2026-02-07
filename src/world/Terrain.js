@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { createNoise2D } from 'simplex-noise'
 import { WORLD_SIZE, TERRAIN_SEGMENTS, TERRAIN_HEIGHT_SCALE, TERRAIN_DETAIL_SCALE, PENSIONS } from '../utils/Constants.js'
 
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
 export default class Terrain {
   constructor(scene) {
     this.noise2D = createNoise2D()
@@ -93,7 +95,7 @@ export default class Terrain {
           float v = 0.0;
           v += terrainNoise(p * 0.05) * 0.5;
           v += terrainNoise(p * 0.12) * 0.25;
-          v += terrainNoise(p * 0.3) * 0.125;
+          ${isMobile ? '' : 'v += terrainNoise(p * 0.3) * 0.125;'}
           return v;
         }`
       )
@@ -114,8 +116,8 @@ export default class Terrain {
           terrainColor = mix(uTerrainHigh, uTerrainRock, clamp((h - 0.55) / 0.45, 0.0, 1.0));
         }
 
-        float micro = terrainNoise(vWorldPos.xz * 0.5) * 0.08 - 0.04;
-        terrainColor += micro;
+        ${isMobile ? '' : `float micro = terrainNoise(vWorldPos.xz * 0.5) * 0.08 - 0.04;
+        terrainColor += micro;`}
 
         for (int i = 0; i < 6; i++) {
           if (i >= uPensionCount) break;

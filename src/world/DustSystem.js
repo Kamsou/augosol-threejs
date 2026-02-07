@@ -1,7 +1,8 @@
 import * as THREE from 'three'
 
-const POOL_SIZE = 40
-const EMIT_INTERVAL = 0.06
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+const POOL_SIZE = isMobile ? 15 : 40
+const EMIT_INTERVAL = isMobile ? 0.12 : 0.06
 
 export default class DustSystem {
   constructor(scene) {

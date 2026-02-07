@@ -32,9 +32,10 @@ export default class Vegetation {
     if (!parts) return null
 
     const dummy = new THREE.Matrix4()
+    const _scaleVec = new THREE.Vector3()
     const meshes = parts.map(part => {
       const mesh = new THREE.InstancedMesh(part.geometry, part.material, count)
-      mesh.castShadow = true
+      mesh.castShadow = !isMobile
       mesh.receiveShadow = true
       return mesh
     })
@@ -48,7 +49,7 @@ export default class Vegetation {
       const y = this.terrain.getHeightAt(x, z)
 
       dummy.makeRotationY(rotation)
-      dummy.scale(new THREE.Vector3(scale, scale, scale))
+      dummy.scale(_scaleVec.set(scale, scale, scale))
       dummy.setPosition(x, y, z)
 
       for (const mesh of meshes) {
@@ -164,6 +165,7 @@ export default class Vegetation {
     const count = 1000
     const grass = new THREE.InstancedMesh(bladeGeo, bladeMat, count)
     const dummy = new THREE.Matrix4()
+    const _grassSv = new THREE.Vector3()
 
     for (let i = 0; i < count; i++) {
       const x = (Math.random() - 0.5) * WORLD_SIZE * 0.85
@@ -172,7 +174,7 @@ export default class Vegetation {
       const scale = 0.4 + Math.random() * 0.8
 
       dummy.makeRotationY(Math.random() * Math.PI * 2)
-      dummy.scale(new THREE.Vector3(scale, scale, scale))
+      dummy.scale(_grassSv.set(scale, scale, scale))
       dummy.setPosition(x, y, z)
       grass.setMatrixAt(i, dummy)
 
@@ -236,10 +238,11 @@ export default class Vegetation {
 
     const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, count)
     const crowns = new THREE.InstancedMesh(crownGeo, crownMat, count)
-    trunks.castShadow = true
-    crowns.castShadow = true
+    trunks.castShadow = !isMobile
+    crowns.castShadow = !isMobile
 
     const dummy = new THREE.Matrix4()
+    const _sv = new THREE.Vector3()
     let placed = 0
 
     for (let attempt = 0; attempt < count * 3 && placed < count; attempt++) {
@@ -254,7 +257,7 @@ export default class Vegetation {
       const scale = 0.7 + Math.random() * 0.8
 
       dummy.makeRotationY(Math.random() * Math.PI * 2)
-      dummy.scale(new THREE.Vector3(scale, scale, scale))
+      dummy.scale(_sv.set(scale, scale, scale))
       dummy.setPosition(x, y + 1.0 * scale, z)
       trunks.setMatrixAt(placed, dummy)
 

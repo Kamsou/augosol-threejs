@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import PensionLocation from './PensionLocation.js'
 
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
 export default class EthicalSportPension extends PensionLocation {
   build() {
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B6914, flatShading: true })
@@ -198,9 +200,11 @@ export default class EthicalSportPension extends PensionLocation {
       lantern.position.set(pos.x, 2.3, pos.z)
       this.group.add(lantern)
 
-      const light = new THREE.PointLight(0xffaa44, 0.8, 10)
-      light.position.set(pos.x, 2.3, pos.z)
-      this.group.add(light)
+      if (!isMobile) {
+        const light = new THREE.PointLight(0xffaa44, 0.8, 10)
+        light.position.set(pos.x, 2.3, pos.z)
+        this.group.add(light)
+      }
     }
   }
 }
