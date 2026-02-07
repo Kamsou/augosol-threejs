@@ -69,7 +69,7 @@ export default class Vegetation {
 
   _createTrees() {
     const treeTypes = ['tree_pine', 'tree_oak', 'tree_birch']
-    const countPerType = isMobile ? 20 : 45
+    const countPerType = isMobile ? 60 : 150
 
     for (const type of treeTypes) {
       if (!this.assets.has(type)) {
@@ -80,16 +80,33 @@ export default class Vegetation {
 
     for (const type of treeTypes) {
       this._placeInstanced(type, countPerType, () => {
-        const x = (Math.random() - 0.5) * WORLD_SIZE * 0.9
-        const z = (Math.random() - 0.5) * WORLD_SIZE * 0.9
+        const x = (Math.random() - 0.5) * WORLD_SIZE * 0.95
+        const z = (Math.random() - 0.5) * WORLD_SIZE * 0.95
         if (this._isExcluded(x, z)) return null
 
         const density = this.noise(x * 0.01, z * 0.01)
-        if (density < -0.2) return null
+        if (density < -0.5) return null
 
         return {
           x, z,
           scale: 0.7 + Math.random() * 0.7,
+          rotation: Math.random() * Math.PI * 2,
+        }
+      })
+    }
+
+    if (this.assets.has('dead_tree')) {
+      this._placeInstanced('dead_tree', isMobile ? 15 : 40, () => {
+        const x = (Math.random() - 0.5) * WORLD_SIZE * 0.95
+        const z = (Math.random() - 0.5) * WORLD_SIZE * 0.95
+        if (this._isExcluded(x, z)) return null
+
+        const density = this.noise(x * 0.015 + 100, z * 0.015 + 100)
+        if (density > 0.1) return null
+
+        return {
+          x, z,
+          scale: 0.6 + Math.random() * 0.6,
           rotation: Math.random() * Math.PI * 2,
         }
       })

@@ -18,7 +18,7 @@ export default class World {
   }
 
   async init(onProgress) {
-    this.assetManager = new AssetManager()
+    this.assetManager = new AssetManager(this.experience.renderer.instance)
     await this.assetManager.loadAll((p) => {
       onProgress?.(p * 0.35)
     })
