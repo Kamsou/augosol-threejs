@@ -76,7 +76,7 @@ body {
 #loading-screen.exit .loading-logo {
   animation: loadingLogoExit 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-#loading-screen.exit .loading-counter {
+#loading-screen.exit .loading-message {
   animation: loadingCounterExit 0.6s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 #loading-screen.exit .loading-line-track {
@@ -125,13 +125,16 @@ body {
   100% { opacity: 0.9; transform: scale(1) translateY(0); filter: blur(0); }
 }
 
-/* Big counter */
-.loading-counter {
+/* Loading message */
+.loading-message {
   position: relative;
   z-index: 1;
   margin-bottom: 2rem;
   opacity: 0;
   animation: loadingCounterIn 1s 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  display: flex;
+  align-items: baseline;
+  gap: 0;
 }
 
 @keyframes loadingCounterIn {
@@ -139,15 +142,29 @@ body {
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
-.loading-number {
-  font-family: var(--font-display);
-  font-size: 4.5rem;
-  font-weight: 200;
-  letter-spacing: -0.02em;
+.loading-text {
+  font-family: var(--font-main);
+  font-size: 0.95rem;
+  font-weight: 300;
+  letter-spacing: 0.02em;
   color: var(--augosol-cream);
-  opacity: 0.15;
-  line-height: 1;
-  transition: opacity 0.3s ease;
+  opacity: 0.55;
+  transition: opacity 0.25s ease;
+}
+
+.loading-text.fade-out {
+  opacity: 0;
+}
+
+.loading-dots {
+  font-family: var(--font-main);
+  font-size: 0.95rem;
+  font-weight: 300;
+  color: var(--augosol-cream);
+  opacity: 0.55;
+  display: inline-block;
+  width: 1.5em;
+  text-align: left;
 }
 
 /* Progress line */
@@ -1026,15 +1043,15 @@ body {
   .mobile-only { display: flex; }
 
   /* Quest banner */
-  .quest-banner { top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; max-width: 75vw; }
-  .quest-text-main { font-size: 0.8rem; }
+  .quest-banner { top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; max-width: calc(100vw - 150px); }
+  .quest-text-main { font-size: 0.75rem; }
   .quest-icon { width: 24px; height: 24px; }
   .quest-icon svg { width: 12px; height: 12px; }
   .quest-step { font-size: 0.55rem; }
 
   /* Loading */
   .loading-logo { width: 56px; }
-  .loading-number { font-size: 3rem; }
+  .loading-text, .loading-dots { font-size: 0.85rem; }
   .loading-line-track { width: 80px; }
   @keyframes loadingLineIn { from { opacity: 0; width: 0; } to { opacity: 1; width: 80px; } }
 
@@ -1053,9 +1070,21 @@ body {
   .minimap-cardinal { font-size: 0.5rem; }
   .speed-indicator { bottom: 160px; left: 50%; transform: translateX(-50%); }
 
-  /* Interaction prompt — above touch buttons */
-  .interaction-prompt { bottom: 45%; font-size: 1rem; }
+  /* Interaction prompt — tappable on mobile */
+  .interaction-prompt {
+    bottom: 45%;
+    font-size: 1rem;
+    pointer-events: auto;
+    cursor: pointer;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    animation: promptPulse 2s ease-in-out infinite;
+  }
   .key-hint { display: none; }
+
+  @keyframes promptPulse {
+    0%, 100% { border-color: rgba(245, 158, 11, 0.2); }
+    50% { border-color: rgba(245, 158, 11, 0.6); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
+  }
 
   /* Location panel — bottom sheet */
   .location-panel {

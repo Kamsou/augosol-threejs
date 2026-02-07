@@ -33,9 +33,11 @@ export default class Renderer {
     this.composer = new EffectComposer(this.instance)
     this.composer.addPass(new RenderPass(this.scene, this.camera.instance))
 
-    const bloomRes = new THREE.Vector2(this.sizes.width, this.sizes.height)
-    this.bloomPass = new UnrealBloomPass(bloomRes, isMobile ? 0.15 : 0.25, 0.8, 0.85)
-    this.composer.addPass(this.bloomPass)
+    if (!isMobile) {
+      const bloomRes = new THREE.Vector2(this.sizes.width, this.sizes.height)
+      this.bloomPass = new UnrealBloomPass(bloomRes, 0.25, 0.8, 0.85)
+      this.composer.addPass(this.bloomPass)
+    }
 
     this.vignettePass = new ShaderPass(VignetteShader)
     this.vignettePass.uniforms['offset'].value = 1.0

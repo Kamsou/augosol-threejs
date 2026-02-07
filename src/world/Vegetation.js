@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { createNoise2D } from 'simplex-noise'
 import { WORLD_SIZE, PENSIONS } from '../utils/Constants.js'
 
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
 export default class Vegetation {
   constructor(scene, terrain, assetManager) {
     this.scene = scene
@@ -12,7 +14,7 @@ export default class Vegetation {
     this._createTrees()
     this._createBushes()
     this._createRocks()
-    this._createGrass()
+    if (!isMobile) this._createGrass()
     this._createFlowers()
   }
 
@@ -66,7 +68,7 @@ export default class Vegetation {
 
   _createTrees() {
     const treeTypes = ['tree_pine', 'tree_oak', 'tree_birch']
-    const countPerType = 45
+    const countPerType = isMobile ? 20 : 45
 
     for (const type of treeTypes) {
       if (!this.assets.has(type)) {
@@ -95,7 +97,7 @@ export default class Vegetation {
 
   _createBushes() {
     const bushTypes = ['bush_1', 'bush_2']
-    const countPerType = 30
+    const countPerType = isMobile ? 15 : 30
 
     for (const type of bushTypes) {
       if (!this.assets.has(type)) continue
@@ -119,7 +121,7 @@ export default class Vegetation {
 
   _createRocks() {
     const rockTypes = ['rock_1', 'rock_2', 'rock_3']
-    const countPerType = 15
+    const countPerType = isMobile ? 8 : 15
 
     for (const type of rockTypes) {
       if (!this.assets.has(type)) continue
@@ -186,7 +188,7 @@ export default class Vegetation {
 
   _createFlowers() {
     const flowerTypes = ['flower_1', 'flower_2']
-    const countPerType = 80
+    const countPerType = isMobile ? 30 : 80
 
     for (const type of flowerTypes) {
       if (!this.assets.has(type)) continue
@@ -204,7 +206,7 @@ export default class Vegetation {
     const flowerGeo = new THREE.SphereGeometry(0.1, 4, 3)
     flowerGeo.translate(0, 0.25, 0)
     const flowerMat = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.7 })
-    const count = 200
+    const count = isMobile ? 80 : 200
     const flowers = new THREE.InstancedMesh(flowerGeo, flowerMat, count)
 
     const flowerColors = [0xf59e0b, 0xfbbf4d, 0xff8a5c, 0xffffff, 0xd4a87a, 0xe8a86b]

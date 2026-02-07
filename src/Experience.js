@@ -108,8 +108,8 @@ export default class Experience {
       this.camera.setApproachMode(false)
     })
 
-    this.inputManager.on('interact', (pressed) => {
-      if (!pressed || !this.started) return
+    const doInteract = () => {
+      if (!this.started) return
 
       if (this.locationInfoPanel.isVisible) {
         this.locationInfoPanel.hide()
@@ -134,7 +134,14 @@ export default class Experience {
           this.locationInfoPanel.show(key, config)
         })
       }
+    }
+
+    this.inputManager.on('interact', (pressed) => {
+      if (!pressed) return
+      doInteract()
     })
+
+    this.interactionPrompt.onTap(() => doInteract())
 
     this.locationInfoPanel.onChoose((locationData) => {
       this.camera.stopCinematic()

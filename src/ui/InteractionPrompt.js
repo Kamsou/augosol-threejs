@@ -2,6 +2,13 @@ export default class InteractionPrompt {
   constructor() {
     this.element = document.getElementById('interaction-prompt')
     this.textElement = document.getElementById('prompt-text')
+    this._onTap = null
+
+    if (this.element) {
+      this.element.addEventListener('click', () => {
+        if (this._onTap) this._onTap()
+      })
+    }
   }
 
   show(locationName) {
@@ -13,5 +20,9 @@ export default class InteractionPrompt {
 
   hide() {
     this.element?.classList.add('hidden')
+  }
+
+  onTap(fn) {
+    this._onTap = fn
   }
 }
