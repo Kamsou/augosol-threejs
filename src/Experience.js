@@ -51,8 +51,13 @@ export default class Experience {
       const MIN_LOADING_TIME = 3000
 
       this.world = new World(this)
-      await this.world.init((progress) => {
-        this.loadingScreen.setProgress(progress * 0.8)
+      await this.world.init((data) => {
+        if (typeof data === 'object' && data.loaded !== undefined) {
+          this.loadingScreen.setProgress(data.progress * 0.8)
+          this.loadingScreen.setCounter(data.loaded, data.total)
+        } else {
+          this.loadingScreen.setProgress(data * 0.8)
+        }
       })
 
       this._setupInteractions()

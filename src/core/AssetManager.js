@@ -23,6 +23,7 @@ export default class AssetManager {
 
   async loadAll(onProgress) {
     const entries = Object.entries(ASSET_MANIFEST)
+    const total = entries.length
     let loaded = 0
 
     const promises = entries.map(([name, config]) => {
@@ -45,11 +46,11 @@ export default class AssetManager {
         })
 
         loaded++
-        onProgress?.(loaded / entries.length)
+        onProgress?.({ progress: loaded / total, loaded, total })
       }).catch(err => {
         console.warn(`AssetManager: failed to load "${name}" from ${config.path}`, err)
         loaded++
-        onProgress?.(loaded / entries.length)
+        onProgress?.({ progress: loaded / total, loaded, total })
       })
     })
 

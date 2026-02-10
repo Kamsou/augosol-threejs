@@ -11,6 +11,7 @@ export default class LoadingScreen {
     this.element = document.getElementById('loading-screen')
     this.textEl = document.getElementById('loading-text')
     this.dotsEl = document.getElementById('loading-dots')
+    this.counterEl = document.getElementById('loading-counter')
     this.line = document.getElementById('loading-line')
     this.glow = document.getElementById('loading-glow')
     this._displayProgress = 0
@@ -42,6 +43,17 @@ export default class LoadingScreen {
     if (newIndex !== this._msgIndex) {
       this._msgIndex = newIndex
       this._swapMessage(MESSAGES[newIndex])
+    }
+  }
+
+  setCounter(loaded, total) {
+    if (this.counterEl) {
+      if (loaded < total) {
+        this.counterEl.textContent = `${loaded}/${total} éléments`
+        this.counterEl.style.opacity = ''
+      } else {
+        this.counterEl.style.opacity = '0'
+      }
     }
   }
 

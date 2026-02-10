@@ -79,6 +79,9 @@ body {
 #loading-screen.exit .loading-message {
   animation: loadingCounterExit 0.6s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+#loading-screen.exit .loading-counter {
+  animation: loadingCounterExit 0.6s 0.12s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 #loading-screen.exit .loading-line-track {
   animation: loadingLineExit 0.7s 0.05s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -129,7 +132,7 @@ body {
 .loading-message {
   position: relative;
   z-index: 1;
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
   opacity: 0;
   animation: loadingCounterIn 1s 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
   display: flex;
@@ -140,6 +143,11 @@ body {
 @keyframes loadingCounterIn {
   from { opacity: 0; transform: translateY(20px); filter: blur(4px); }
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes loadingCounterFadeIn {
+  from { opacity: 0; transform: translateY(12px); filter: blur(3px); }
+  to { opacity: 0.28; transform: translateY(0); filter: blur(0); }
 }
 
 .loading-text {
@@ -165,6 +173,20 @@ body {
   display: inline-block;
   width: 1.5em;
   text-align: left;
+}
+
+.loading-counter {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--augosol-cream);
+  margin-bottom: 2rem;
+  letter-spacing: 0.03em;
+  opacity: 0;
+  animation: loadingCounterFadeIn 0.8s 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: opacity 0.3s ease;
 }
 
 /* Progress line */
@@ -1064,7 +1086,9 @@ body {
 
   /* Loading */
   .loading-logo { width: 56px; }
+  .loading-message { margin-bottom: 0.6rem; }
   .loading-text, .loading-dots { font-size: 0.85rem; }
+  .loading-counter { font-size: 0.65rem; margin-bottom: 1.5rem; }
   .loading-line-track { width: 80px; }
   @keyframes loadingLineIn { from { opacity: 0; width: 0; } to { opacity: 1; width: 80px; } }
 
