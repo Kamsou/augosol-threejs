@@ -46,15 +46,8 @@ export default class LoadingScreen {
     }
   }
 
-  setCounter(loaded, total) {
-    if (this.counterEl) {
-      if (loaded < total) {
-        this.counterEl.textContent = `${loaded}/${total} éléments`
-        this.counterEl.style.opacity = ''
-      } else {
-        this.counterEl.style.opacity = '0'
-      }
-    }
+  setCounter() {
+    // Counter is now updated automatically in _animate() for smooth progression
   }
 
   _swapMessage(text) {
@@ -85,6 +78,16 @@ export default class LoadingScreen {
         const size = 200 + this._displayProgress * 250
         this.glow.style.width = `${size}px`
         this.glow.style.height = `${size}px`
+      }
+
+      // Update counter with smoothly animated progress
+      if (this.counterEl) {
+        if (pct < 100) {
+          this.counterEl.textContent = `${pct}%`
+          this.counterEl.style.opacity = ''
+        } else {
+          this.counterEl.style.opacity = '0'
+        }
       }
 
       this._raf = requestAnimationFrame(step)

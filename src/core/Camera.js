@@ -34,8 +34,101 @@ export default class Camera {
     this._smoothFov = CAMERA.fov
     this._smoothShakeIntensity = 0
     this._targetSpeedRatio = 0
+    this._impulse = 0
+    this._impulseTime = 0
+    this._photo = null
 
     this.sizes.on('resize', () => this.resize())
+  }
+
+  // Brief widening of the view (take-off), decays on its own
+  addFovKick(amount) {
+    this._fovKick = Math.min((this._fovKick || 0) + amount, 8)
+  }
+
+  // One-off jolt (landing from a jump), decays on its own
+  addShake(amount) {
+    this._impulse = Math.min(this._impulse + amount, 0.6)
+    this._impulseTime = 0
+  }
+
+  enterPhotoMode() {
+    if (!this.target) return
+    _tmpVec.subVectors(this.instance.position, this.target.position)
+    const dist = THREE.MathUtils.clamp(_tmpVec.length(), 6, 26)
+    this._photo = {
+      yaw: Math.atan2(_tmpVec.x, _tmpVec.z),
+      pitch: THREE.MathUtils.clamp(Math.asin(_tmpVec.y / _tmpVec.length()), -0.05, 1.2),
+      dist,
+      targetYaw: Math.atan2(_tmpVec.x, _tmpVec.z),
+      targetPitch: THREE.MathUtils.clamp(Math.asin(_tmpVec.y / _tmpVec.length()), -0.05, 1.2),
+      targetDist: dist,
+      idle: 0,
+    }
+  }
+
+  exitPhotoMode() {
+    this._photo = null
+  }
+
+  // Welcome screen: slow turntable around the horse, framed off-centre so the text has room.
+  // lateral > 0 pushes the horse to the right of the frame, lift < 0 raises it.
+  enterIntro({ lateral = 0, lift = 0, distance = 12, pitch = 0.16 } = {}) {
+    if (!this.target) return
+    const yaw = this.target.rotation.y + Math.PI * 0.72
+    this._photo = {
+      yaw, pitch, dist: distance,
+      targetYaw: yaw, targetPitch: pitch, targetDist: distance,
+      idle: Infinity,
+      spin: 0.05,
+      lateral, lift,
+    }
+  }
+
+  orbit(dx, dy) {
+    if (!this._photo) return
+    this._photo.targetYaw -= dx * 0.006
+    this._photo.targetPitch = THREE.MathUtils.clamp(this._photo.targetPitch + dy * 0.004, -0.05, 1.2)
+    this._photo.idle = 0
+  }
+
+  zoom(delta) {
+    if (!this._photo) return
+    this._photo.targetDist = THREE.MathUtils.clamp(this._photo.targetDist * Math.exp(delta * 0.0012), 5, 30)
+    this._photo.idle = 0
+  }
+
+  _updatePhoto(dt) {
+    const ph = this._photo
+    ph.idle += dt
+    // Slow turntable once the user lets go
+    if (ph.idle > 2.5) ph.targetYaw += dt * (ph.spin ?? 0.12)
+
+    const k = Math.min(dt * 6, 1)
+    ph.yaw += (ph.targetYaw - ph.yaw) * k
+    ph.pitch += (ph.targetPitch - ph.pitch) * k
+    ph.dist += (ph.targetDist - ph.dist) * k
+
+    const cosP = Math.cos(ph.pitch)
+    _tmpVec.set(
+      Math.sin(ph.yaw) * cosP * ph.dist,
+      Math.sin(ph.pitch) * ph.dist + 2.0,
+      Math.cos(ph.yaw) * cosP * ph.dist
+    ).add(this.target.position)
+    this.instance.position.copy(_tmpVec)
+    this.currentLookAt.copy(this.target.position).y += 2.2 + (ph.lift || 0)
+    if (ph.lateral) {
+      // Aim to the left of the horse (camera right = cos yaw, -sin yaw) so it sits to the right
+      this.currentLookAt.x -= Math.cos(ph.yaw) * ph.lateral
+      this.currentLookAt.z += Math.sin(ph.yaw) * ph.lateral
+    }
+    this.instance.lookAt(this.currentLookAt)
+
+    if (Math.abs(this.instance.fov - CAMERA.fov) > 0.05) {
+      this._smoothFov = CAMERA.fov
+      this.instance.fov = CAMERA.fov
+      this.instance.updateProjectionMatrix()
+    }
   }
 
   setTarget(object) {
@@ -96,10 +189,16 @@ export default class Camera {
   update(dt) {
     if (!this.target || !this._initialized) return
 
+    if (this._photo) {
+      this._updatePhoto(dt)
+      return
+    }
+
     const speedRatio = this._targetSpeedRatio || 0
     this._smoothShakeIntensity = THREE.MathUtils.lerp(this._smoothShakeIntensity, speedRatio, 3 * dt)
 
-    const targetFov = CAMERA.fov + this._smoothShakeIntensity * 7
+    this._fovKick = (this._fovKick || 0) * Math.exp(-dt * 3)
+    const targetFov = CAMERA.fov + this._smoothShakeIntensity * 7 + this._fovKick
     this._smoothFov = THREE.MathUtils.lerp(this._smoothFov, targetFov, 3 * dt)
     if (Math.abs(this.instance.fov - this._smoothFov) > 0.05) {
       this.instance.fov = this._smoothFov
@@ -155,6 +254,12 @@ export default class Camera {
 
     this.instance.position.x += shakeX
     this.instance.position.y += shakeY
+
+    if (this._impulse > 0.001) {
+      this._impulseTime += dt
+      this.instance.position.y -= Math.cos(this._impulseTime * 32) * this._impulse * 0.5
+      this._impulse *= Math.exp(-dt * 7)
+    }
 
     _tmpVec.copy(this.lookAtOffset).applyQuaternion(this._smoothQuaternion).add(this.target.position)
     this.currentLookAt.lerp(_tmpVec, this.lerpSpeed * dt)

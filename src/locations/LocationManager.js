@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 import { PENSIONS, INTERACTION_RADIUS, APPROACH_RADIUS } from '../utils/Constants.js'
+import { createBeamMaterial } from '../world/BeamMaterial.js'
+import { mergeStatic } from '../utils/mergeStatic.js'
 
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 import NaturePension from './NaturePension.js'
@@ -31,6 +33,8 @@ export default class LocationManager {
       const PensionClass = PENSION_CLASSES[key]
       const location = new PensionClass(config, terrain, assetManager)
       location.build()
+      // The decor never moves: one draw call per material instead of one per prop
+      mergeStatic(location.group)
       location.addToScene(scene)
       this.locations[key] = location
 
@@ -50,13 +54,7 @@ export default class LocationManager {
     const group = new THREE.Group()
 
     const pillarGeo = new THREE.CylinderGeometry(0.15, 0.6, 20, isMobile ? 4 : 8, 1, true)
-    const pillarMat = new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 0.08,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    })
+    const pillarMat = createBeamMaterial(color, 0.08)
     const pillar = new THREE.Mesh(pillarGeo, pillarMat)
     pillar.position.y = 10
     group.add(pillar)
@@ -116,23 +114,34 @@ export default class LocationManager {
     }
 
     let closest = null
-    let closestDist = Infinity
+    let closestDistSq = Infinity
+
+    // Use squared distance for faster comparison (avoids sqrt)
+    const maxCheckDistSq = 250 * 250 // Only check pensions within 250 units
 
     for (const [key, location] of this._locationEntries) {
-      location.update(dt)
+      // Quick early rejection using squared distance
+      const distSq = horsePosition.distanceToSquared(location.position)
 
-      const dist = horsePosition.distanceTo(location.position)
+      // Only update nearby pensions to reduce overhead
+      if (distSq < maxCheckDistSq) {
+        location.update(dt)
+      }
 
-      if (dist < closestDist) {
-        closestDist = dist
-        closest = { key, location, distance: dist }
+      if (distSq < closestDistSq) {
+        closestDistSq = distSq
+        closest = { key, location, distance: Math.sqrt(distSq) }
       }
     }
 
     const wasInRange = this.isInRange
     const previousNearest = this.nearestLocation
 
-    if (closest && closestDist < INTERACTION_RADIUS) {
+    // Use squared distances for comparison (already computed)
+    const interactionRadiusSq = INTERACTION_RADIUS * INTERACTION_RADIUS
+    const approachRadiusSq = APPROACH_RADIUS * APPROACH_RADIUS
+
+    if (closest && closestDistSq < interactionRadiusSq) {
       this.isInRange = true
       this.nearestLocation = closest
 
@@ -141,7 +150,7 @@ export default class LocationManager {
       }
     } else {
       this.isInRange = false
-      this.nearestLocation = closestDist < APPROACH_RADIUS ? closest : null
+      this.nearestLocation = closestDistSq < approachRadiusSq ? closest : null
 
       if (wasInRange) {
         this._listeners.leave.forEach(fn => fn(previousNearest))

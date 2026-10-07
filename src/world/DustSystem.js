@@ -117,6 +117,33 @@ export default class DustSystem {
     this._prevActive = active
   }
 
+  // Ring of dust when the horse lands from a jump
+  burst(pos, strength = 1) {
+    const count = Math.min(POOL_SIZE, Math.round((isMobile ? 8 : 18) * strength))
+    for (let j = 0; j < count; j++) {
+      const i = this._nextIdx
+      this._nextIdx = (this._nextIdx + 1) % POOL_SIZE
+
+      const p = this._particles[i]
+      p.alive = true
+      p.life = 0
+      p.maxLife = 0.7 + Math.random() * 0.5
+      p.startSize = 2.2 + Math.random() * 2
+      p.startAlpha = 0.22 + Math.random() * 0.1
+
+      const angle = (j / count) * Math.PI * 2 + Math.random() * 0.3
+      const posArr = this._posArr
+      posArr[i * 3] = pos.x + Math.cos(angle) * 0.8
+      posArr[i * 3 + 1] = pos.y + 0.2
+      posArr[i * 3 + 2] = pos.z + Math.sin(angle) * 0.8
+
+      const speed = 3 + Math.random() * 2.5
+      p.vx = Math.cos(angle) * speed
+      p.vy = 0.6 + Math.random() * 0.8
+      p.vz = Math.sin(angle) * speed
+    }
+  }
+
   _emit(pos, speed) {
     const count = speed > 20 ? 3 : 2
     for (let j = 0; j < count; j++) {

@@ -21,13 +21,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@100;300;400;700&family=Unbounded:wght@200;400;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..600,0..100,0..1;1,9..144,300..600,0..100,0..1&family=Kumbh+Sans:wght@100;300;400;700&family=Unbounded:wght@200;400;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="/src/styles/main.css" />
 </head>
 
 <body>
   <canvas class="webgl"></canvas>
+  <div id="mood-overlay" class="mood-overlay"></div>
+  <div id="emote-layer" class="emote-layer"></div>
 
   <div id="loading-screen" class="overlay">
     <div class="loading-content">
@@ -45,38 +47,75 @@
   </div>
 
   <div id="welcome-screen" class="overlay hidden">
+    <div class="welcome-shade"></div>
+
+    <header class="welcome-top">
+      <div class="welcome-brand">
+        <img src="/logo-augosol.png" alt="Augosol" class="welcome-logo" />
+        <span class="welcome-wordmark">augosol <em>· une balade, six pensions, un seul choix</em></span>
+      </div>
+      <span class="welcome-sound desktop-only">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M11 5L6 9H3v6h3l5 4z" />
+          <path d="M15.5 8.5a5 5 0 010 7" />
+        </svg>
+        Avec le son
+      </span>
+    </header>
+
     <div class="welcome-content">
-      <img src="/logo-augosol.png" alt="Augosol" class="welcome-logo" />
-
       <h1 class="welcome-headline">
-        <span class="headline-line">Trouvez la pension</span>
-        <span class="headline-line headline-accent">idéale pour votre cheval</span>
+        <span class="headline-line">Trouvez la pension idéale</span>
+        <span class="headline-line">pour <label class="name-field">
+            <span class="sr-only">Le nom de votre cheval</span>
+            <input id="horse-name" type="text" maxlength="18" autocomplete="off" spellcheck="false"
+              placeholder="votre cheval" />
+            <span class="name-mirror" aria-hidden="true"></span>
+          </label></span>
       </h1>
+      <p class="name-hint">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
+        </svg>
+        <span id="name-hint-text">Écrivez son nom, il vous accompagnera tout au long de la balade</span>
+      </p>
 
-      <p class="welcome-tagline">Explorez librement 6 pensions et découvrez celles qui respectent vraiment le bien-être
-        équin.</p>
+      <div class="welcome-row">
+        <fieldset class="coat-picker">
+          <legend>Sa robe</legend>
+          <div class="coat-swatches" id="coat-swatches"></div>
+          <span class="coat-name" id="coat-name"></span>
+        </fieldset>
 
-      <div class="controls-row desktop-only">
-        <div class="control-hint"><span class="key-inline">&#x2190; &#x2191; &#x2193; &#x2192;</span> Se déplacer</div>
-        <span class="control-sep"></span>
-        <div class="control-hint"><span class="key-inline">Shift</span> Galoper</div>
-        <span class="control-sep"></span>
-        <div class="control-hint"><span class="key-inline">E</span> Interagir</div>
+        <div class="welcome-cta">
+          <button id="start-btn" class="btn-primary">
+            <span>En selle</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </button>
+          <span class="welcome-hint desktop-only">ou <kbd>Entrée</kbd></span>
+        </div>
       </div>
-
-      <div class="controls-row mobile-only">
-        <div class="control-hint">Joystick pour se déplacer</div>
-        <span class="control-sep"></span>
-        <div class="control-hint">Boutons galop &amp; interaction</div>
-      </div>
-
-      <button id="start-btn" class="btn-start">
-        <span class="btn-text">Commencer l'exploration</span>
-        <span class="btn-arrow">&rarr;</span>
-      </button>
-
-      <p class="welcome-footer">6 pensions &middot; Toutes ne se valent pas</p>
     </div>
+
+    <ol class="welcome-steps" aria-label="Votre mission">
+      <li><span class="step-index">1</span><span class="step-text">Explorez les six pensions du domaine</span></li>
+      <li><span class="step-index">2</span><span class="step-text">Observez comment il réagit à chacune</span></li>
+      <li><span class="step-index">3</span><span class="step-text">Choisissez celle où il sera heureux</span></li>
+    </ol>
+
+    <p class="welcome-keys desktop-only" aria-label="Commandes">
+      <span><kbd>&uarr;&darr;&larr;&rarr;</kbd> avancer</span>
+      <span><kbd>Shift</kbd> galoper</span>
+      <span><kbd>Espace</kbd> sauter</span>
+      <span><kbd>E</kbd> découvrir</span>
+      <span><kbd>Clic</kbd> caresser</span>
+      <span><kbd>P</kbd> photo</span>
+    </p>
   </div>
 
   <div id="hud" class="hud hidden">
@@ -85,8 +124,76 @@
       <div class="minimap-ring"></div>
       <div class="minimap-cardinal minimap-n" id="minimap-north">N</div>
     </div>
-    <div id="speed-indicator" class="speed-indicator"></div>
+    <div class="hud-dock">
+      <div id="collect-pill" class="collect-pill" title="Fers d'or trouvés">
+        <svg class="collect-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.4" stroke-linecap="round">
+          <path d="M6 20V11a6 6 0 0112 0v9" />
+          <path d="M4 20h4M16 20h4" />
+        </svg>
+        <span id="collect-count" class="collect-count">0/0</span>
+      </div>
+      <div class="hud-actions">
+        <button id="hud-photo" class="hud-btn" aria-label="Mode photo (P)" title="Mode photo (P)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 8a2 2 0 012-2h2l1.5-2h7L17 6h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            <circle cx="12" cy="13" r="3.5" />
+          </svg>
+        </button>
+        <button id="hud-sound" class="hud-btn" aria-label="Son (M)" title="Son (M)">
+          <svg class="icon-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 5L6 9H3v6h3l5 4z" />
+            <path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13" />
+          </svg>
+          <svg class="icon-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 5L6 9H3v6h3l5 4z" />
+            <path d="M16 9l5 6M21 9l-5 6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="speed-indicator" class="speed-indicator" data-level="0">
+      <div class="gait-bars"><span></span><span></span><span></span></div>
+      <span class="gait-label">Arrêt</span>
+    </div>
   </div>
+
+  <div id="course-hud" class="course-hud hidden" aria-live="off">
+    <svg class="course-flag" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+    </svg>
+    <span id="course-time" class="course-time">0:00.0</span>
+    <div id="course-dots" class="course-dots"></div>
+    <span id="course-penalty" class="course-penalty"></span>
+  </div>
+
+  <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+  <div id="photo-ui" class="photo-ui hidden">
+    <div class="photo-bar photo-bar-top"></div>
+    <div class="photo-bar photo-bar-bottom"></div>
+    <div class="photo-header">
+      <span class="photo-title">Mode photo</span>
+      <span class="photo-hint desktop-only">Glisser pour tourner · Molette pour zoomer · Espace pour capturer</span>
+      <span class="photo-hint mobile-only">Glisser pour tourner · Pincer pour zoomer</span>
+      <button id="photo-close" class="photo-close" aria-label="Quitter le mode photo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+    <div class="photo-toolbar">
+      <div id="photo-filters" class="photo-filters"></div>
+      <button id="photo-capture" class="photo-capture" aria-label="Capturer"><span></span></button>
+      <button id="photo-dof" class="photo-chip photo-dof">Flou artistique</button>
+    </div>
+  </div>
+  <div id="photo-flash" class="photo-flash"></div>
 
   <div id="quest-banner" class="quest-banner hidden">
     <div class="quest-banner-inner">
@@ -121,6 +228,16 @@
         <span class="touch-btn-label">Galop</span>
       </div>
       <div class="touch-btn-group">
+        <button id="touch-jump" class="touch-btn touch-jump">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 17c3-8 13-8 16 0" />
+            <path d="M11 3v6M8 6l3-3 3 3" />
+          </svg>
+        </button>
+        <span class="touch-btn-label">Saut</span>
+      </div>
+      <div class="touch-btn-group">
         <button id="touch-interact" class="touch-btn touch-interact">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
             <circle cx="11" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none" />
@@ -135,7 +252,7 @@
 
   <div id="interaction-prompt" class="interaction-prompt hidden">
     <span class="key-hint">E</span>
-    <span id="prompt-text">Decouvrir</span>
+    <span id="prompt-text">Découvrir</span>
   </div>
 
   <div id="location-panel" class="location-panel hidden">

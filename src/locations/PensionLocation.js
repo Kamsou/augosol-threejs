@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { INTERACTION_RADIUS } from '../utils/Constants.js'
+import { createBeamMaterial } from '../world/BeamMaterial.js'
 
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
@@ -53,12 +54,7 @@ export default class PensionLocation {
 
   _createBeacon() {
     const beaconGeo = new THREE.CylinderGeometry(0.3, 0.5, 40, isMobile ? 4 : 6)
-    const beaconMat = new THREE.MeshBasicMaterial({
-      color: this.color,
-      transparent: true,
-      opacity: this.ethical ? 0.15 : 0.08,
-      side: THREE.DoubleSide,
-    })
+    const beaconMat = createBeamMaterial(this.color, this.ethical ? 0.15 : 0.08)
     this.beacon = new THREE.Mesh(beaconGeo, beaconMat)
     this.beacon.position.y = 20
     this.group.add(this.beacon)

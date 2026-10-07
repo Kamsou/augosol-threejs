@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { WIND } from './Wind.js'
 
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
@@ -11,22 +12,27 @@ export default class Particles {
     this._createFallingLeaves()
   }
 
+  // Glowing pollen & fireflies drifting in the wind, wrapped around the player
   _createAmbientParticles() {
-    const count = isMobile ? 50 : 150
-    const positions = new Float32Array(count * 3)
+    const count = isMobile ? 220 : 700
+    const box = 110
+    const offsets = new Float32Array(count * 3)
+    const seeds = new Float32Array(count * 2)
     const colors = new Float32Array(count * 3)
 
     const particleColors = [
       new THREE.Color(0xffe5c4),
-      new THREE.Color(0xf59e0b),
+      new THREE.Color(0xffc561),
       new THREE.Color(0xfbbf4d),
-      new THREE.Color(0xd4a87a),
+      new THREE.Color(0xfff2c8),
     ]
 
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 200
-      positions[i * 3 + 1] = 1 + Math.random() * 15
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 200
+      offsets[i * 3] = (Math.random() - 0.5) * box
+      offsets[i * 3 + 1] = Math.pow(Math.random(), 1.8) * 12 + 0.4
+      offsets[i * 3 + 2] = (Math.random() - 0.5) * box
+      seeds[i * 2] = Math.random() * 100
+      seeds[i * 2 + 1] = 0.5 + Math.random()
 
       const color = particleColors[Math.floor(Math.random() * particleColors.length)]
       colors[i * 3] = color.r
@@ -35,27 +41,74 @@ export default class Particles {
     }
 
     const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    geometry.setAttribute('position', new THREE.BufferAttribute(offsets, 3))
+    geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 2))
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
 
-    const material = new THREE.PointsMaterial({
-      size: 0.3,
-      vertexColors: true,
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: WIND.uTime,
+        uWindDir: WIND.uWindDir,
+        uCenter: { value: new THREE.Vector3() },
+        uBox: { value: box },
+        uPixelRatio: { value: 1 },
+      },
+      vertexShader: /* glsl */ `
+        uniform float uTime;
+        uniform vec2 uWindDir;
+        uniform vec3 uCenter;
+        uniform float uBox;
+        uniform float uPixelRatio;
+        attribute vec2 aSeed;
+        attribute vec3 color;
+        varying vec3 vColor;
+        varying float vAlpha;
+
+        void main() {
+          float s = aSeed.x;
+          vec3 p = position;
+          p.xz += uWindDir * uTime * 0.9 * aSeed.y;
+          p += vec3(sin(uTime * 0.35 + s) * 2.0, sin(uTime * 0.6 + s * 3.0) * 0.7, cos(uTime * 0.28 + s * 1.7) * 2.0);
+
+          vec2 rel = mod(p.xz - uCenter.xz + uBox * 0.5, uBox) - uBox * 0.5;
+          vec3 world = vec3(uCenter.x + rel.x, uCenter.y + p.y, uCenter.z + rel.y);
+
+          vec4 mv = viewMatrix * vec4(world, 1.0);
+          gl_Position = projectionMatrix * mv;
+
+          float twinkle = 0.55 + 0.45 * sin(uTime * (1.5 + aSeed.y * 2.5) + s * 6.0);
+          float edge = 1.0 - smoothstep(uBox * 0.3, uBox * 0.5, length(rel));
+          float nearFade = smoothstep(1.5, 5.0, -mv.z);
+          vAlpha = twinkle * edge * nearFade;
+          vColor = color;
+
+          gl_PointSize = (0.18 + aSeed.y * 0.16) * 260.0 * uPixelRatio / -mv.z;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          float d = length(gl_PointCoord - 0.5) * 2.0;
+          float core = smoothstep(0.35, 0.0, d);
+          float halo = pow(max(1.0 - d, 0.0), 2.5) * 0.45;
+          float a = (core + halo) * vAlpha;
+          if (a < 0.01) discard;
+          gl_FragColor = vec4(vColor * (1.0 + core * 1.5), a);
+        }
+      `,
       transparent: true,
-      opacity: 0.6,
-      sizeAttenuation: true,
       depthWrite: false,
+      blending: THREE.AdditiveBlending,
     })
 
     this.particles = new THREE.Points(geometry, material)
+    this.particles.frustumCulled = false
     this.scene.add(this.particles)
-
-    this._positions = positions
-    this._count = count
   }
 
   _createFallingLeaves() {
-    const leafCount = isMobile ? 8 : 20
+    const leafCount = isMobile ? 12 : 40
     const leafGeo = new THREE.PlaneGeometry(0.25, 0.35)
     const leafMat = new THREE.MeshBasicMaterial({
       color: 0x9a7b3a,
@@ -95,17 +148,12 @@ export default class Particles {
     this._leafEuler = new THREE.Euler()
   }
 
-  update(dt) {
+  update(dt, center, pixelRatio = 1) {
     this._time += dt
+    // Follows the renderer (capped on mobile, lowered by dynamic resolution)
+    this.particles.material.uniforms.uPixelRatio.value = pixelRatio
 
-    const positions = this.particles.geometry.attributes.position.array
-    for (let i = 0; i < this._count; i++) {
-      positions[i * 3 + 1] += Math.sin(this._time + i * 0.5) * 0.003
-      positions[i * 3] += Math.sin(this._time * 0.5 + i) * 0.002
-      positions[i * 3 + 2] += Math.cos(this._time * 0.3 + i) * 0.002
-    }
-    this.particles.geometry.attributes.position.needsUpdate = true
-    this.particles.material.opacity = 0.4 + Math.sin(this._time * 0.8) * 0.2
+    if (center) this.particles.material.uniforms.uCenter.value.copy(center)
 
     const dummy = this._leafDummy
     const euler = this._leafEuler
@@ -116,10 +164,13 @@ export default class Particles {
       d.rx += d.rotSpeed * dt
       d.rz += d.rotSpeed * 0.5 * dt
 
-      if (d.y < -1) {
-        d.y = 15 + Math.random() * 10
-        d.x = (Math.random() - 0.5) * 200
-        d.z = (Math.random() - 0.5) * 200
+      // Recycle leaves around the rider so they keep falling where we look
+      const cy = center ? center.y : 0
+      const far = center && (Math.abs(d.x - center.x) > 50 || Math.abs(d.z - center.z) > 50)
+      if (d.y < cy - 1 || far) {
+        d.y = cy + 10 + Math.random() * 10
+        d.x = (center ? center.x : 0) + (Math.random() - 0.5) * 80
+        d.z = (center ? center.z : 0) + (Math.random() - 0.5) * 80
       }
 
       euler.set(d.rx, d.ry, d.rz)

@@ -1,8 +1,15 @@
 import * as THREE from 'three'
 import { createNoise2D } from 'simplex-noise'
-import { WORLD_SIZE, PENSIONS } from '../utils/Constants.js'
+import { WORLD_SIZE, PENSIONS, COURSE } from '../utils/Constants.js'
+import { WIND, WIND_GLSL } from './Wind.js'
 
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+const CULL_EVERY = 2
+const SHADOW_KEEP_RADIUS = 45
+
+const _frustum = new THREE.Frustum()
+const _projScreen = new THREE.Matrix4()
+const _sphere = new THREE.Sphere()
 
 export default class Vegetation {
   constructor(scene, terrain, assetManager) {
@@ -10,6 +17,9 @@ export default class Vegetation {
     this.terrain = terrain
     this.assets = assetManager
     this.noise = createNoise2D()
+    this._sets = []
+    this._frame = 0
+    this._cullCamera = new THREE.PerspectiveCamera()
 
     this._createTrees()
     this._createBushes()
@@ -18,8 +28,10 @@ export default class Vegetation {
     this._createFlowers()
   }
 
-  _isExcluded(x, z, spawnRadius = 15, pensionRadius = 18) {
+  // The spawn clearing is wide enough for the welcome camera to circle the horse unobstructed
+  _isExcluded(x, z, spawnRadius = 22, pensionRadius = 18) {
     if (Math.sqrt(x * x + z * z) < spawnRadius) return true
+    if (Math.hypot(x - COURSE.center.x, z - COURSE.center.z) < COURSE.clearRadius) return true
     for (const key of Object.keys(PENSIONS)) {
       const pos = PENSIONS[key].position
       if (Math.sqrt((x - pos.x) ** 2 + (z - pos.z) ** 2) < pensionRadius) return true
@@ -27,19 +39,63 @@ export default class Vegetation {
     return false
   }
 
-  _placeInstanced(assetName, count, placeFn) {
+  // Sway instanced vegetation in the shared wind (amount grows with height above the root)
+  _applyWind(material, sway) {
+    material.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, WIND)
+      shader.uniforms.uSway = { value: sway }
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', `#include <common>
+          ${WIND_GLSL}
+          uniform float uSway;`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          #ifdef USE_INSTANCING
+            vec3 instPos = instanceMatrix[3].xyz;
+            float phase = instPos.x * 0.13 + instPos.z * 0.11;
+            float swayK = pow(max(transformed.y, 0.0), 1.5) * uSway;
+            vec2 sway = uWindDir * (windGust(instPos.xz) * 0.8 + 0.2) * uWindStrength
+              + vec2(sin(uTime * 1.3 + phase), cos(uTime * 1.1 + phase * 1.3)) * 0.25;
+            // Bring the world-space sway into the instance's rotated/scaled frame
+            mat3 instRS = mat3(instanceMatrix);
+            float instScale2 = dot(instRS[0], instRS[0]);
+            vec3 localSway = transpose(instRS) * vec3(sway.x, 0.0, sway.y) / instScale2;
+            transformed.xz += localSway.xz * swayK;
+            transformed.xz += vec2(sin(uTime * 5.0 + transformed.y * 2.0 + phase), cos(uTime * 4.3 + transformed.x * 2.0)) * 0.015 * swayK;
+          #endif`)
+    }
+    material.customProgramCacheKey = () => 'vegetation-wind'
+  }
+
+  // Instances are culled on the CPU (frustum + distance) and only the survivors are uploaded,
+  // so far-away and off-screen vegetation costs nothing in the main and shadow passes
+  _placeInstanced(assetName, count, placeFn, { sway = 0, maxDistance = Infinity, castShadow = !isMobile } = {}) {
     const parts = this.assets.getInstanceParts(assetName)
     if (!parts) return null
+
+    if (sway > 0) {
+      for (const part of parts) this._applyWind(part.material, sway)
+    }
+
+    const bounds = new THREE.Sphere()
+    for (const part of parts) {
+      part.geometry.computeBoundingSphere()
+      if (bounds.isEmpty()) bounds.copy(part.geometry.boundingSphere)
+      else bounds.union(part.geometry.boundingSphere)
+    }
 
     const dummy = new THREE.Matrix4()
     const _scaleVec = new THREE.Vector3()
     const meshes = parts.map(part => {
       const mesh = new THREE.InstancedMesh(part.geometry, part.material, count)
-      mesh.castShadow = !isMobile
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+      mesh.frustumCulled = false
+      mesh.castShadow = castShadow
       mesh.receiveShadow = true
       return mesh
     })
 
+    const matrices = new Float32Array(count * 16)
+    const spheres = new Float32Array(count * 4)
     let placed = 0
     for (let attempt = 0; attempt < count * 4 && placed < count; attempt++) {
       const result = placeFn(attempt)
@@ -51,20 +107,71 @@ export default class Vegetation {
       dummy.makeRotationY(rotation)
       dummy.scale(_scaleVec.set(scale, scale, scale))
       dummy.setPosition(x, y, z)
+      dummy.toArray(matrices, placed * 16)
 
-      for (const mesh of meshes) {
-        mesh.setMatrixAt(placed, dummy)
-      }
+      spheres[placed * 4] = x + bounds.center.x * scale
+      spheres[placed * 4 + 1] = y + bounds.center.y * scale
+      spheres[placed * 4 + 2] = z + bounds.center.z * scale
+      spheres[placed * 4 + 3] = bounds.radius * scale
       placed++
     }
 
     for (const mesh of meshes) {
-      mesh.count = placed
-      mesh.instanceMatrix.needsUpdate = true
+      mesh.count = 0
       this.scene.add(mesh)
     }
 
+    this._sets.push({ meshes, matrices, spheres, total: placed, maxDistance, castShadow })
     return meshes
+  }
+
+  update(camera, focus) {
+    if (this._frame++ % CULL_EVERY !== 0) return
+
+    // Slightly wider than the real view so quick turns between two culls never show holes
+    const cull = this._cullCamera
+    cull.copy(camera, false)
+    cull.fov = Math.min(camera.fov + 20, 120)
+    cull.updateProjectionMatrix()
+    cull.updateMatrixWorld(true)
+    _projScreen.multiplyMatrices(cull.projectionMatrix, cull.matrixWorldInverse)
+    _frustum.setFromProjectionMatrix(_projScreen)
+
+    for (const set of this._sets) {
+      const { matrices, spheres, total, maxDistance, castShadow } = set
+      const firstArray = set.meshes[0].instanceMatrix.array
+      const maxDistSq = maxDistance * maxDistance
+      let visible = 0
+
+      for (let i = 0; i < total; i++) {
+        const cx = spheres[i * 4]
+        const cy = spheres[i * 4 + 1]
+        const cz = spheres[i * 4 + 2]
+        const dx = cx - focus.x
+        const dz = cz - focus.z
+        const distSq = dx * dx + dz * dz
+        if (distSq > maxDistSq) continue
+
+        _sphere.center.set(cx, cy, cz)
+        _sphere.radius = spheres[i * 4 + 3]
+        // Nearby casters stay even off-screen: their shadows can still fall into view
+        const shadowKeep = castShadow && distSq < SHADOW_KEEP_RADIUS * SHADOW_KEEP_RADIUS
+        if (!shadowKeep && !_frustum.intersectsSphere(_sphere)) continue
+
+        firstArray.set(matrices.subarray(i * 16, i * 16 + 16), visible * 16)
+        visible++
+      }
+
+      for (const mesh of set.meshes) {
+        if (mesh.instanceMatrix.array !== firstArray) {
+          mesh.instanceMatrix.array.set(firstArray.subarray(0, visible * 16))
+        }
+        mesh.count = visible
+        mesh.instanceMatrix.clearUpdateRanges()
+        mesh.instanceMatrix.addUpdateRange(0, visible * 16)
+        mesh.instanceMatrix.needsUpdate = true
+      }
+    }
   }
 
   _createTrees() {
@@ -92,7 +199,7 @@ export default class Vegetation {
           scale: 0.7 + Math.random() * 0.7,
           rotation: Math.random() * Math.PI * 2,
         }
-      })
+      }, { sway: 0.006 })
     }
 
     if (this.assets.has('dead_tree')) {
@@ -109,7 +216,7 @@ export default class Vegetation {
           scale: 0.6 + Math.random() * 0.6,
           rotation: Math.random() * Math.PI * 2,
         }
-      })
+      }, { sway: 0.003 })
     }
   }
 
@@ -133,7 +240,7 @@ export default class Vegetation {
           scale: 0.6 + Math.random() * 0.8,
           rotation: Math.random() * Math.PI * 2,
         }
-      })
+      }, { sway: 0.03, maxDistance: 190 })
     }
   }
 
@@ -154,7 +261,7 @@ export default class Vegetation {
           scale: 0.4 + Math.random() * 0.8,
           rotation: Math.random() * Math.PI * 2,
         }
-      })
+      }, { maxDistance: 200 })
     }
   }
 
@@ -168,41 +275,8 @@ export default class Vegetation {
           scale: 0.3 + Math.random() * 0.7,
           rotation: Math.random() * Math.PI * 2,
         }
-      })
+      }, { sway: 0.12, maxDistance: 90, castShadow: false })
     }
-
-    const bladeGeo = new THREE.ConeGeometry(0.06, 0.4, 3)
-    bladeGeo.translate(0, 0.2, 0)
-    const bladeMat = new THREE.MeshStandardMaterial({
-      color: 0x6a9e4a,
-      flatShading: true,
-      roughness: 1.0,
-    })
-
-    const count = 1000
-    const grass = new THREE.InstancedMesh(bladeGeo, bladeMat, count)
-    const dummy = new THREE.Matrix4()
-    const _grassSv = new THREE.Vector3()
-
-    for (let i = 0; i < count; i++) {
-      const x = (Math.random() - 0.5) * WORLD_SIZE * 0.85
-      const z = (Math.random() - 0.5) * WORLD_SIZE * 0.85
-      const y = this.terrain.getHeightAt(x, z)
-      const scale = 0.4 + Math.random() * 0.8
-
-      dummy.makeRotationY(Math.random() * Math.PI * 2)
-      dummy.scale(_grassSv.set(scale, scale, scale))
-      dummy.setPosition(x, y, z)
-      grass.setMatrixAt(i, dummy)
-
-      const color = new THREE.Color()
-      color.setHSL(0.25 + Math.random() * 0.08, 0.4 + Math.random() * 0.3, 0.3 + Math.random() * 0.2)
-      grass.setColorAt(i, color)
-    }
-
-    grass.instanceMatrix.needsUpdate = true
-    if (grass.instanceColor) grass.instanceColor.needsUpdate = true
-    this.scene.add(grass)
   }
 
   _createFlowers() {
@@ -219,7 +293,7 @@ export default class Vegetation {
           scale: 0.3 + Math.random() * 0.5,
           rotation: Math.random() * Math.PI * 2,
         }
-      })
+      }, { sway: 0.15, maxDistance: 110, castShadow: false })
     }
 
     const flowerGeo = new THREE.SphereGeometry(0.1, 4, 3)

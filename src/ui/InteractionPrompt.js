@@ -13,7 +13,7 @@ export default class InteractionPrompt {
 
   show(locationName) {
     if (this.textElement) {
-      this.textElement.textContent = `Decouvrir "${locationName}"`
+      this.textElement.textContent = `Découvrir « ${locationName} »`
     }
     this.element?.classList.remove('hidden')
   }

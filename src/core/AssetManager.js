@@ -2,9 +2,18 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
-import { ASSET_MANIFEST } from '../utils/Constants.js'
+import { ASSET_MANIFEST, TERRAIN_TEXTURES } from '../utils/Constants.js'
 
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+
+// Foliage, flowers and fences are exported as alpha-blended. Fully opaque textures with
+// transparent holes render faster (depth writes, no sorting, no overdraw) as alpha cutouts.
+function toCutout(material) {
+  if (!material.transparent || !material.map || material.opacity < 1) return
+  material.transparent = false
+  material.depthWrite = true
+  material.alphaTest = 0.5
+}
 
 export default class AssetManager {
   constructor(renderer) {
@@ -34,6 +43,8 @@ export default class AssetManager {
           if (child.isMesh) {
             child.castShadow = !isMobile
             child.receiveShadow = true
+            const mats = Array.isArray(child.material) ? child.material : [child.material]
+            mats.forEach(toCutout)
           }
         })
 
@@ -55,6 +66,35 @@ export default class AssetManager {
     })
 
     await Promise.all(promises)
+  }
+
+  async loadTerrainTextures(renderer, onProgress) {
+    const loader = new THREE.TextureLoader()
+    const textures = {}
+    const jobs = []
+    for (const [type, maps] of Object.entries(TERRAIN_TEXTURES)) {
+      textures[type] = {}
+      for (const [mapType, url] of Object.entries(maps)) jobs.push({ type, mapType, url })
+    }
+
+    const total = jobs.length
+    let loaded = 0
+    await Promise.all(jobs.map(async ({ type, mapType, url }) => {
+      try {
+        const tex = await loader.loadAsync(url)
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+        // Colour maps are sRGB-encoded; data maps (normal, roughness) must stay linear
+        if (mapType === 'albedo') tex.colorSpace = THREE.SRGBColorSpace
+        if (renderer) tex.anisotropy = renderer.capabilities.getMaxAnisotropy()
+        textures[type][mapType] = tex
+      } catch (err) {
+        console.warn(`AssetManager: failed to load terrain texture "${type}.${mapType}" from ${url}`, err)
+      }
+      loaded++
+      onProgress?.({ progress: loaded / total, loaded, total })
+    }))
+
+    return textures
   }
 
   has(name) {

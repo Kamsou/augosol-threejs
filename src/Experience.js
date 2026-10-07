@@ -11,7 +11,15 @@ import HUD from './ui/HUD.js'
 import InteractionPrompt from './ui/InteractionPrompt.js'
 import LocationInfoPanel from './ui/LocationInfoPanel.js'
 import QuestBanner from './ui/QuestBanner.js'
-import { PENSIONS, HORSE } from './utils/Constants.js'
+import Toast from './ui/Toast.js'
+import PhotoMode from './ui/PhotoMode.js'
+import AudioManager from './core/AudioManager.js'
+import Profile from './core/Profile.js'
+import HorseEmotes from './ui/HorseEmotes.js'
+import PensionMood from './world/PensionMood.js'
+import CourseHUD from './ui/CourseHUD.js'
+import { formatTime } from './world/JumpCourse.js'
+import { PENSIONS, HORSE, COURSE, JUMP } from './utils/Constants.js'
 
 export default class Experience {
   static instance = null
@@ -37,6 +45,14 @@ export default class Experience {
     this.interactionPrompt = new InteractionPrompt()
     this.locationInfoPanel = new LocationInfoPanel()
     this.questBanner = new QuestBanner()
+    this.toast = new Toast()
+    this.profile = new Profile()
+    this.audio = new AudioManager()
+    this.photoMode = new PhotoMode(this)
+    this.emotes = new HorseEmotes(this)
+    this._ray = new THREE.Raycaster()
+    this._pointer = new THREE.Vector2()
+    this._horseCenter = new THREE.Vector3()
 
     this.questState = 'none'
     this._lastViewedLocation = null
@@ -54,9 +70,10 @@ export default class Experience {
       await this.world.init((data) => {
         if (typeof data === 'object' && data.loaded !== undefined) {
           this.loadingScreen.setProgress(data.progress * 0.8)
-          this.loadingScreen.setCounter(data.loaded, data.total)
+          this.loadingScreen.setCounter()
         } else {
           this.loadingScreen.setProgress(data * 0.8)
+          this.loadingScreen.setCounter()
         }
       })
 
@@ -66,16 +83,40 @@ export default class Experience {
       const remaining = Math.max(MIN_LOADING_TIME - elapsed, 800)
       await this._smoothProgress(0.8, 1.0, remaining)
 
+      // The living world is the welcome backdrop: horse idling, camera circling it
+      this.world.horse.controller.frozen = true
+      this.camera.enterIntro(this.inputManager.isMobile
+        ? { lift: -1.9, distance: 12, pitch: 0.16 }
+        : { lateral: 2.6, lift: -1.9, distance: 11.5, pitch: 0.1 })
+
+      // Name and coat are picked on the live horse
+      this.welcomeScreen.onCoat((coat, fromUser) => {
+        this.world.horse.setCoat(coat.body, coat.mane, !fromUser)
+        if (fromUser) this.world.horse.react('content')
+      })
+      this.welcomeScreen.bind(this.profile)
+
       await this.loadingScreen.hide()
       this.welcomeScreen.show()
 
       this.welcomeScreen.onStart(() => {
+        // Glide from the intro orbit down to the riding camera
+        this.camera.exitPhotoMode()
+        this.world.horse.controller.frozen = false
         this.started = true
+        this.audio.init()
         this.hud.show()
         if (this.inputManager.isMobile) {
           document.getElementById('touch-controls')?.classList.remove('hidden')
         }
         this._startQuest1()
+        setTimeout(() => {
+          if (!this.photoMode.active) {
+            this.toast.show('Des fers d\'or sont cachés dans le domaine', this.inputManager.isMobile
+              ? `Touchez ${this.profile.nameInSentence} pour le caresser, « Saut » pour bondir`
+              : `Cliquez sur ${this.profile.nameInSentence} pour le caresser · Espace pour sauter · P pour la photo`, { duration: 5500 })
+          }
+        }, 4500)
       })
 
     } catch (error) {
@@ -91,7 +132,7 @@ export default class Experience {
 
   _startQuest2() {
     this.questState = 'quest2'
-    this.questBanner.show('Trouvez une pension qui respecte votre cheval', 'Étape 2')
+    this.questBanner.show(`Trouvez une pension qui respecte ${this.profile.nameInSentence}`, 'Étape 2')
   }
 
   _completeQuests() {
@@ -114,7 +155,8 @@ export default class Experience {
     })
 
     const doInteract = () => {
-      if (!this.started) return
+      // Freezing mid-jump would leave the horse hanging in the air during the cinematic
+      if (!this.started || this.photoMode.active || this.world.horse.controller.airborne) return
 
       if (this.locationInfoPanel.isVisible) {
         this.locationInfoPanel.hide()
@@ -154,6 +196,8 @@ export default class Experience {
       this._celebrate(locationData.config)
     })
 
+    this._setupPlayground()
+
     this.locationInfoPanel.onContinue(() => {
       this.camera.stopCinematic()
       this.camera.setApproachMode(false)
@@ -163,6 +207,204 @@ export default class Experience {
         this._startQuest2()
       }
     })
+  }
+
+  // Jump, photo mode, sound and the golden horseshoe hunt
+  _setupPlayground() {
+    const world = this.world
+    const horse = world.horse
+    const canPlay = () => this.started && !this.locationInfoPanel.isVisible && !this.camera.isCinematicActive
+      && document.getElementById('celebration-screen')?.classList.contains('hidden')
+
+    this.inputManager.on('jump', (pressed) => {
+      if (!pressed) return
+      if (this.photoMode.active) {
+        this.photoMode.capture()
+        return
+      }
+      if (canPlay()) this._requestJump()
+    })
+
+    this.inputManager.on('photo', (pressed) => {
+      if (!pressed) return
+      if (this.photoMode.active) this.photoMode.exit()
+      else if (canPlay()) this._enterPhoto()
+    })
+
+    this.inputManager.on('escape', (pressed) => {
+      if (pressed) this.photoMode.exit()
+    })
+
+    this.inputManager.on('mute', (pressed) => {
+      if (pressed) this.audio.toggleMute()
+    })
+
+    document.getElementById('hud-photo')?.addEventListener('click', () => {
+      if (canPlay()) this._enterPhoto()
+    })
+
+    const soundBtn = document.getElementById('hud-sound')
+    const syncSound = (muted) => soundBtn?.classList.toggle('muted', muted)
+    syncSound(this.audio.muted)
+    this.audio.onChange(syncSound)
+    soundBtn?.addEventListener('click', () => this.audio.toggleMute())
+
+    horse.onTakeoff = (speed) => {
+      this.audio.whoosh()
+      world.dustSystem.burst(horse.mesh.position, 0.35 + speed / 60)
+      this.camera.addFovKick(2 + speed / 10)
+    }
+
+    horse.controller.onLand = (impact) => {
+      world.dustSystem.burst(horse.mesh.position, impact / 10)
+      this.camera.addShake(Math.min(impact / 40, 0.35))
+      this.audio.land(impact)
+    }
+
+    this.mood = new PensionMood(this)
+
+    this.inputManager.on('pet', (pressed) => {
+      if (pressed && canPlay() && !this.photoMode.active) this._petHorse()
+    })
+    this._setupHorseTouch(canPlay)
+
+    this._setupCourse()
+
+    const collectibles = world.collectibles
+    this.hud.setCollectibles(0, collectibles.total)
+    collectibles.on(({ collected, total }) => {
+      this.audio.chime(collected - 1)
+      this.hud.setCollectibles(collected, total)
+      if (collected === total) {
+        this.audio.fanfare()
+        this.toast.show('Collection complète !', `Les ${total} fers d'or sont à vous. Votre cheval vous porte chance`, { variant: 'gold', duration: 5000 })
+      } else if (collected === 1) {
+        this.toast.show('Premier fer d\'or !', `Encore ${total - 1} à dénicher, suivez les lueurs dorées`, { variant: 'gold' })
+      }
+    })
+  }
+
+  _setupCourse() {
+    const course = this.world.course
+    this.courseHud = new CourseHUD()
+    const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`
+
+    course.on((e) => {
+      switch (e.type) {
+        case 'discover':
+          this.toast.show('Parcours d\'obstacles', e.best
+            ? `Passez sous l'arche pour lancer le chrono · Record ${formatTime(e.best)}`
+            : this.inputManager.isMobile
+              ? 'Passez sous l\'arche pour lancer le chrono, « Saut » au bon moment'
+              : 'Passez sous l\'arche pour lancer le chrono · Espace pour sauter', { duration: 5000 })
+          break
+        case 'start':
+          this.courseHud.show(course.jumps.length)
+          this.audio.go()
+          this.toast.show('C\'est parti !', `Franchissez les ${course.jumps.length} obstacles dans l'ordre`)
+          break
+        case 'clear':
+          if (e.counts) this.courseHud.mark(e.index - 1, 'clear')
+          this.audio.chime(e.counts ? e.index - 1 : 2)
+          this.emotes.say('heart', 'Joli saut !', 1300)
+          break
+        case 'knock': {
+          if (e.counts) this.courseHud.mark(e.index - 1, 'knock')
+          this.audio.knock()
+          const what = e.hind ? 'Touchée des postérieurs' : 'Barre tombée'
+          this.emotes.say('alert', e.counts ? `${what} · +${COURSE.penalty} s` : what, 1600)
+          break
+        }
+        case 'incomplete':
+          this.toast.show('Pas si vite !', `Encore ${plural(e.remaining, 'obstacle')} avant l'arrivée`)
+          break
+        case 'finish': {
+          this.courseHud.hide()
+          this.audio.fanfare()
+          const faults = e.faults ? plural(e.faults, 'barre') : 'Sans faute'
+          this.toast.show(
+            e.record ? `Nouveau record · ${formatTime(e.total)}` : `Parcours terminé · ${formatTime(e.total)}`,
+            e.record ? faults : `${faults} · Record ${formatTime(e.best)}`,
+            { variant: e.record || !e.faults ? 'gold' : '', duration: 6000 }
+          )
+          break
+        }
+        case 'abort':
+          this.courseHud.hide()
+          this.toast.show('Parcours abandonné', 'Repassez sous l\'arche pour retenter')
+          break
+      }
+    })
+  }
+
+  // Jump now, or a touch later if that puts the apex right over the pole ahead
+  _requestJump() {
+    const horse = this.world.horse
+    const controller = horse.controller
+    const speed = Math.max(Math.abs(controller.speed), HORSE.trotSpeed)
+    const distance = this.world.course.poleAhead(horse.mesh.position, controller.currentRotation)
+    let delay = 0
+    if (distance !== null && !controller.airborne) {
+      // Distance is measured from the centre; the forelegs are ~1.8 ahead and should peak over the pole
+      const apex = (speed * controller.airTime) / 2
+      const wait = (distance - 1.8 - apex * 0.8) / speed
+      if (wait > 0.02 && wait <= JUMP.maxAssistDelay) delay = wait
+    }
+    horse.requestJump(delay)
+  }
+
+  _petHorse() {
+    const horse = this.world.horse
+    if (!horse.pet()) return
+    this.emotes.hearts(4 + Math.floor(Math.random() * 3))
+    // Don't spam the voice when clicking repeatedly
+    const now = performance.now()
+    if (!this._lastNicker || now - this._lastNicker > 1400) {
+      this._lastNicker = now
+      this.audio.nicker()
+    }
+  }
+
+  _isOverHorse(clientX, clientY) {
+    this._pointer.set((clientX / this.sizes.width) * 2 - 1, -(clientY / this.sizes.height) * 2 + 1)
+    this._ray.setFromCamera(this._pointer, this.camera.instance)
+    const horse = this.world.horse
+    // Cheap capsule-ish test: body centre and head instead of a skinned-mesh raycast
+    this._horseCenter.copy(horse.mesh.position).y += 2.6
+    if (this._ray.ray.distanceToPoint(this._horseCenter) < 2.3) return true
+    horse.getHeadPosition(this._horseCenter)
+    return this._ray.ray.distanceToPoint(this._horseCenter) < 1.4
+  }
+
+  // Click / tap on the horse to pet it; the cursor turns into a hand on hover
+  _setupHorseTouch(canPlay) {
+    const canvas = this.canvas
+    let down = null
+
+    canvas.addEventListener('pointerdown', (e) => {
+      down = { x: e.clientX, y: e.clientY, t: performance.now() }
+    })
+
+    canvas.addEventListener('pointerup', (e) => {
+      if (!down || this.photoMode.active || !canPlay()) return
+      const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y)
+      const quick = performance.now() - down.t < 400
+      down = null
+      if (moved < 10 && quick && this._isOverHorse(e.clientX, e.clientY)) this._petHorse()
+    })
+
+    if (!this.inputManager.isMobile) {
+      canvas.addEventListener('pointermove', (e) => {
+        if (this.photoMode.active || !this.started) return
+        const over = canPlay() && this._isOverHorse(e.clientX, e.clientY) && this.world.horse.canBePetted
+        canvas.style.cursor = over ? 'pointer' : ''
+      })
+    }
+  }
+
+  _enterPhoto() {
+    this.interactionPrompt.hide()
+    this.photoMode.enter()
   }
 
   _celebrate(config) {
@@ -210,7 +452,7 @@ export default class Experience {
     if (this.questState === 'quest2' && config.ethical) {
       this._completeQuests()
       if (title) { title.textContent = 'Bravo !'; title.className = 'ethical-result' }
-      if (text) text.textContent = `Vous avez choisi ${config.name}, un lieu où le bien-être du cheval passe avant tout. Vie sociale, liberté de mouvement et soins adaptés : votre cheval peut s'épanouir pleinement.`
+      if (text) text.textContent = `Vous avez choisi ${config.name}, un lieu où le bien-être du cheval passe avant tout. Vie sociale, liberté de mouvement et soins adaptés : ${this.profile.nameInSentence} peut s'épanouir pleinement.`
       if (btnText) btnText.textContent = 'Rejouer'
       if (glow) glow.style.background = 'radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 70%)'
       if (icon) setIcon(icon, checkPath, greenColor)
@@ -245,7 +487,9 @@ export default class Experience {
         document.getElementById('touch-controls')?.classList.remove('hidden')
       }
 
+      this.world.course?.abort()
       this.world.horse.mesh.position.set(0, 0, 0)
+      this.mood?.reset()
       this.world.horse.controller.currentRotation = 0
       this.world.horse.controller.speed = 0
 
@@ -281,14 +525,31 @@ export default class Experience {
         questHint = { targetEthical: true }
       }
 
-      this.hud.update(horsePosition, horseRotation, movementState, locationWorldData, questHint)
+      const course = this.world.course
+      this.hud.update(horsePosition, horseRotation, movementState, locationWorldData, questHint,
+        this.world.collectibles.getRemaining(), { gate: course.gatePosition, next: course.nextJumpPosition })
+      this.courseHud?.update(course)
 
       const speed = Math.abs(this.world.horse.controller.speed)
       this.camera.setSpeedRatio(speed / HORSE.gallopSpeed)
+      this.renderer.speedRatio = this.photoMode.active ? 0 : speed / HORSE.gallopSpeed
+      this.audio.update(dt, speed, this.world.horse.controller.airborne)
+      this.mood?.update(dt)
     }
 
+    if (!this.started && this.world?.ready) {
+      // Behind the welcome screen: the horse breathes, the herds live, shadows follow
+      const horse = this.world.horse
+      horse.update(dt)
+      this.world.lighting.update(dt, horse.mesh.position)
+      this.world.herd.update(dt, horse.mesh.position)
+    }
+
+    this.world?.updateAmbient(dt)
     this.camera.update(dt)
-    this.renderer.update()
+    this.photoMode.update()
+    if (this.world?.ready) this.emotes.update()
+    this.renderer.update(dt)
   }
 
   _delay(ms) {

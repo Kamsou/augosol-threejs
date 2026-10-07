@@ -5,7 +5,20 @@ export default class InputManager {
     this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
     this.analog = { x: 0, y: 0 }
 
+    // Typing in a field (the horse's name) must never trigger game shortcuts
+    const isTyping = (e) => e.target instanceof Element && e.target.closest('input, textarea, [contenteditable="true"]')
+    // Space/Enter on a focused button must keep activating it (keyboard users)
+    const activatesControl = (e) => (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter')
+      && e.target instanceof Element && e.target.closest('button, a[href], [role="button"], [role="radio"]')
+
+    // A mouse/touch click must not leave a button focused, or the next Space would re-press it
+    // instead of jumping. Keyboard activations (detail 0) keep their focus.
+    window.addEventListener('click', (e) => {
+      if (e.detail > 0 && e.target instanceof Element) e.target.closest('button')?.blur()
+    })
+
     window.addEventListener('keydown', (e) => {
+      if (isTyping(e) || activatesControl(e)) return
       const action = this._mapKey(e.code)
       if (action) {
         e.preventDefault()
@@ -17,6 +30,7 @@ export default class InputManager {
     })
 
     window.addEventListener('keyup', (e) => {
+      if (isTyping(e)) return
       const action = this._mapKey(e.code)
       if (action) {
         this._keys[action] = false
@@ -48,6 +62,11 @@ export default class InputManager {
       'ShiftLeft': 'gallop',
       'ShiftRight': 'gallop',
       'KeyE': 'interact',
+      'Space': 'jump',
+      'KeyP': 'photo',
+      'KeyM': 'mute',
+      'KeyC': 'pet',
+      'Escape': 'escape',
     }
     return map[code] || null
   }
@@ -145,51 +164,22 @@ export default class InputManager {
       resetJoystick()
     }, { passive: false })
 
-    if (gallopBtn) {
-      gallopBtn.addEventListener('touchstart', (e) => {
+    const bindButton = (button, action) => {
+      if (!button) return
+      const press = (pressed) => (e) => {
         e.preventDefault()
-        this._keys['gallop'] = true
-        this._emit('gallop', true)
-        gallopBtn.classList.add('active')
-      }, { passive: false })
-
-      gallopBtn.addEventListener('touchend', (e) => {
-        e.preventDefault()
-        this._keys['gallop'] = false
-        this._emit('gallop', false)
-        gallopBtn.classList.remove('active')
-      }, { passive: false })
-
-      gallopBtn.addEventListener('touchcancel', (e) => {
-        e.preventDefault()
-        this._keys['gallop'] = false
-        this._emit('gallop', false)
-        gallopBtn.classList.remove('active')
-      }, { passive: false })
+        this._keys[action] = pressed
+        this._emit(action, pressed)
+        button.classList.toggle('active', pressed)
+      }
+      button.addEventListener('touchstart', press(true), { passive: false })
+      button.addEventListener('touchend', press(false), { passive: false })
+      button.addEventListener('touchcancel', press(false), { passive: false })
     }
 
-    if (interactBtn) {
-      interactBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault()
-        this._keys['interact'] = true
-        this._emit('interact', true)
-        interactBtn.classList.add('active')
-      }, { passive: false })
-
-      interactBtn.addEventListener('touchend', (e) => {
-        e.preventDefault()
-        this._keys['interact'] = false
-        this._emit('interact', false)
-        interactBtn.classList.remove('active')
-      }, { passive: false })
-
-      interactBtn.addEventListener('touchcancel', (e) => {
-        e.preventDefault()
-        this._keys['interact'] = false
-        this._emit('interact', false)
-        interactBtn.classList.remove('active')
-      }, { passive: false })
-    }
+    bindButton(gallopBtn, 'gallop')
+    bindButton(interactBtn, 'interact')
+    bindButton(document.getElementById('touch-jump'), 'jump')
   }
 
   isPressed(action) {

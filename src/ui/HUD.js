@@ -11,7 +11,21 @@ export default class HUD {
     this._minimapEl = document.getElementById('minimap')
     this._frame = 0
 
+    this._counterEl = document.getElementById('collect-count')
+    this._counterPill = document.getElementById('collect-pill')
+    this._gaitEl = this.speedIndicator
+    this._lastGait = null
+
     this._setupCanvas()
+  }
+
+  setCollectibles(collected, total) {
+    if (this._counterEl) this._counterEl.textContent = `${collected}/${total}`
+    if (!this._counterPill) return
+    this._counterPill.classList.toggle('complete', collected >= total)
+    this._counterPill.classList.remove('bump')
+    void this._counterPill.offsetWidth
+    this._counterPill.classList.add('bump')
   }
 
   _setupCanvas() {
@@ -34,15 +48,15 @@ export default class HUD {
     this.element?.classList.add('hidden')
   }
 
-  update(horsePosition, horseRotation, movementState, locationWorldData, questHint = null) {
+  update(horsePosition, horseRotation, movementState, locationWorldData, questHint = null, collectibles = null, course = null) {
     this._frame++
     if (!isMobile || this._frame % 4 === 0) {
-      this._updateMinimap(horsePosition, horseRotation, locationWorldData, questHint)
+      this._updateMinimap(horsePosition, horseRotation, locationWorldData, questHint, collectibles, course)
     }
     this._updateSpeed(movementState)
   }
 
-  _updateMinimap(horsePos, horseRotation, locations, questHint) {
+  _updateMinimap(horsePos, horseRotation, locations, questHint, collectibles, course) {
     const ctx = this._ctx
     if (!ctx) return
 
@@ -82,6 +96,53 @@ export default class HUD {
     )
 
     const now = Date.now()
+
+    // Nearby golden horseshoes show up as twinkling diamonds
+    if (collectibles) {
+      const radarSq = 70 * 70
+      const d = 2.6 * dpr
+      ctx.fillStyle = '#ffc23d'
+      for (const c of collectibles) {
+        const wx = c.x - horsePos.x
+        const wz = c.z - horsePos.z
+        if (wx * wx + wz * wz > radarSq) continue
+        ctx.globalAlpha = 0.6 + 0.4 * Math.sin(now * 0.006 + c.x)
+        ctx.beginPath()
+        ctx.moveTo(wx * scale, wz * scale - d)
+        ctx.lineTo(wx * scale + d, wz * scale)
+        ctx.lineTo(wx * scale, wz * scale + d)
+        ctx.lineTo(wx * scale - d, wz * scale)
+        ctx.closePath()
+        ctx.fill()
+      }
+      ctx.globalAlpha = 1
+    }
+
+    // Jumping course: chequered flag at the arch, pulsing ring on the next jump
+    if (course?.gate) {
+      const gx = (course.gate.x - horsePos.x) * scale
+      const gz = (course.gate.z - horsePos.z) * scale
+      const f = 3 * dpr
+      for (let i = 0; i < 2; i++) {
+        for (let j = 0; j < 2; j++) {
+          ctx.fillStyle = (i + j) % 2 ? '#1c140e' : '#f5efe6'
+          ctx.fillRect(gx - f + i * f, gz - f + j * f, f, f)
+        }
+      }
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'
+      ctx.lineWidth = 1 * dpr
+      ctx.strokeRect(gx - f, gz - f, f * 2, f * 2)
+    }
+    if (course?.next) {
+      const nx = (course.next.x - horsePos.x) * scale
+      const nz = (course.next.z - horsePos.z) * scale
+      ctx.beginPath()
+      ctx.arc(nx, nz, (3 + Math.sin(now * 0.008) * 1.2) * dpr, 0, Math.PI * 2)
+      ctx.strokeStyle = '#ffc23d'
+      ctx.lineWidth = 2 * dpr
+      ctx.stroke()
+    }
+
     for (const loc of locations) {
       const dx = (loc.x - horsePos.x) * scale
       const dz = (loc.z - horsePos.z) * scale
@@ -147,13 +208,12 @@ export default class HUD {
   }
 
   _updateSpeed(state) {
-    if (!this.speedIndicator) return
-    const labels = {
-      idle: '',
-      walk: 'Pas',
-      trot: 'Trot',
-      gallop: 'Galop',
-    }
-    this.speedIndicator.textContent = labels[state] || ''
+    if (!this._gaitEl || state === this._lastGait) return
+    this._lastGait = state
+    const labels = { idle: 'Arrêt', walk: 'Pas', trot: 'Trot', gallop: 'Galop' }
+    const level = { idle: 0, walk: 1, trot: 2, gallop: 3 }[state] ?? 0
+    this._gaitEl.dataset.level = level
+    const label = this._gaitEl.querySelector('.gait-label')
+    if (label) label.textContent = labels[state] || ''
   }
 }
