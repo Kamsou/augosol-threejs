@@ -1,9 +1,12 @@
+import { haptic } from '../utils/haptics.js'
+
 export default class InputManager {
   constructor() {
     this._keys = {}
     this._listeners = {}
     this.isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
-    this.analog = { x: 0, y: 0 }
+    this.analog = { x: 0, y: 0, throttle: 0, active: false }
+    if (this.isMobile) document.documentElement.classList.add('is-touch')
 
     // Typing in a field (the horse's name) must never trigger game shortcuts
     const isTyping = (e) => e.target instanceof Element && e.target.closest('input, textarea, [contenteditable="true"]')
@@ -71,103 +74,123 @@ export default class InputManager {
     return map[code] || null
   }
 
+  // Floating analog stick: put a thumb anywhere in the steer zone and the stick appears under it.
+  // Push distance is the throttle (walk → trot → gallop), sideways is the turn.
   _setupTouch() {
-    const joystickZone = document.getElementById('joystick-zone')
-    const joystickThumb = document.getElementById('joystick-thumb')
-    const gallopBtn = document.getElementById('touch-gallop')
-    const interactBtn = document.getElementById('touch-interact')
+    const zone = document.getElementById('steer-zone')
+    const stick = document.getElementById('joystick')
+    const thumb = document.getElementById('joystick-thumb')
+    const hint = document.getElementById('steer-hint')
+    if (!zone || !stick || !thumb) return
 
-    if (!joystickZone || !joystickThumb) return
+    const RADIUS = 62
+    const GALLOP_AT = 0.88
+    let touchId = null
+    let origin = { x: 0, y: 0 }
+    let start = { x: 0, y: 0, t: 0 }
+    let moved = false
 
-    let joystickActive = false
-    let joystickCenter = { x: 0, y: 0 }
-    const maxRadius = 55
-
-    const updateJoystick = (touchX, touchY) => {
-      const rect = joystickZone.getBoundingClientRect()
-      joystickCenter = {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
-      }
-
-      let dx = touchX - joystickCenter.x
-      let dy = touchY - joystickCenter.y
-      const dist = Math.sqrt(dx * dx + dy * dy)
-
-      if (dist > maxRadius) {
-        dx = (dx / dist) * maxRadius
-        dy = (dy / dist) * maxRadius
-      }
-
-      joystickThumb.style.transform = `translate(${dx}px, ${dy}px)`
-
-      const nx = dx / maxRadius
-      const ny = dy / maxRadius
-
-      const deadZone = 0.35
-      this.analog.x = Math.abs(nx) > deadZone ? nx : 0
-      this.analog.y = Math.abs(ny) > deadZone ? ny : 0
-
-      const wasForward = this._keys['forward']
-      const wasBackward = this._keys['backward']
-      this._keys['forward'] = ny < -deadZone
-      this._keys['backward'] = ny > deadZone
-      if (this._keys['forward'] && !wasForward) this._emit('forward', true)
-      if (!this._keys['forward'] && wasForward) this._emit('forward', false)
-      if (this._keys['backward'] && !wasBackward) this._emit('backward', true)
-      if (!this._keys['backward'] && wasBackward) this._emit('backward', false)
-
-      const wasLeft = this._keys['left']
-      const wasRight = this._keys['right']
-      this._keys['left'] = nx < -deadZone
-      this._keys['right'] = nx > deadZone
-      if (this._keys['left'] && !wasLeft) this._emit('left', true)
-      if (!this._keys['left'] && wasLeft) this._emit('left', false)
-      if (this._keys['right'] && !wasRight) this._emit('right', true)
-      if (!this._keys['right'] && wasRight) this._emit('right', false)
+    const setKey = (action, on) => {
+      if (!!this._keys[action] === on) return
+      this._keys[action] = on
+      this._emit(action, on)
     }
 
-    const resetJoystick = () => {
-      joystickActive = false
-      joystickThumb.style.transform = 'translate(0, 0)'
+    const place = (x, y) => {
+      // Keep the whole stick on screen
+      const margin = RADIUS + 14
+      origin = {
+        x: Math.min(Math.max(x, margin), window.innerWidth - margin),
+        y: Math.min(Math.max(y, margin), window.innerHeight - margin),
+      }
+      stick.style.transform = `translate3d(${origin.x}px, ${origin.y}px, 0)`
+    }
+
+    const update = (x, y) => {
+      let dx = x - origin.x
+      let dy = y - origin.y
+      const dist = Math.hypot(dx, dy)
+      if (Math.hypot(x - start.x, y - start.y) > 12) moved = true
+      if (dist > RADIUS) {
+        dx = (dx / dist) * RADIUS
+        dy = (dy / dist) * RADIUS
+      }
+      thumb.style.transform = `translate3d(${dx}px, ${dy}px, 0)`
+
+      const nx = dx / RADIUS
+      const ny = dy / RADIUS
+      const mag = Math.min(dist / RADIUS, 1)
+      // How much the push points "up": full throttle within ~60° of straight ahead,
+      // a sideways push mostly turns at a walk
+      const up = mag > 0 ? -ny / mag : 0
+      const throttle = up < -0.5 ? -mag : mag * Math.min(Math.max((up + 0.3) / 0.8, 0), 1)
+
+      this.analog.active = true
+      this.analog.x = Math.abs(nx) > 0.12 ? nx : 0
+      this.analog.y = ny
+      this.analog.throttle = Math.abs(throttle) > 0.2 ? throttle : 0
+
+      setKey('forward', this.analog.throttle > 0)
+      setKey('backward', this.analog.throttle < -0.45)
+      setKey('left', nx < -0.35)
+      setKey('right', nx > 0.35)
+      const galloping = this.analog.throttle >= GALLOP_AT
+      if (galloping && !this._keys.gallop) haptic(8)
+      setKey('gallop', galloping)
+      stick.classList.toggle('galloping', galloping)
+    }
+
+    const release = () => {
+      touchId = null
+      this.analog.active = false
       this.analog.x = 0
       this.analog.y = 0
-      ;['forward', 'backward', 'left', 'right'].forEach(action => {
-        if (this._keys[action]) {
-          this._keys[action] = false
-          this._emit(action, false)
-        }
-      })
+      this.analog.throttle = 0
+      ;['forward', 'backward', 'left', 'right', 'gallop'].forEach(a => setKey(a, false))
+      thumb.style.transform = 'translate3d(0, 0, 0)'
+      // Back to its resting spot (the CSS default) so it doesn't linger mid-screen
+      stick.style.transform = ''
+      stick.classList.remove('active', 'galloping')
     }
 
-    joystickZone.addEventListener('touchstart', (e) => {
+    zone.addEventListener('touchstart', (e) => {
       e.preventDefault()
-      joystickActive = true
-      const t = e.touches[0]
-      updateJoystick(t.clientX, t.clientY)
+      if (touchId !== null) return
+      const t = e.changedTouches[0]
+      touchId = t.identifier
+      start = { x: t.clientX, y: t.clientY, t: performance.now() }
+      moved = false
+      place(t.clientX, t.clientY)
+      stick.classList.add('active')
+      hint?.classList.add('done')
+      update(t.clientX, t.clientY)
     }, { passive: false })
 
-    joystickZone.addEventListener('touchmove', (e) => {
+    zone.addEventListener('touchmove', (e) => {
       e.preventDefault()
-      if (!joystickActive) return
-      const t = e.touches[0]
-      updateJoystick(t.clientX, t.clientY)
+      for (const t of e.changedTouches) {
+        if (t.identifier === touchId) update(t.clientX, t.clientY)
+      }
     }, { passive: false })
 
-    joystickZone.addEventListener('touchend', (e) => {
+    const end = (e) => {
       e.preventDefault()
-      resetJoystick()
-    }, { passive: false })
-
-    joystickZone.addEventListener('touchcancel', (e) => {
-      e.preventDefault()
-      resetJoystick()
-    }, { passive: false })
+      for (const t of e.changedTouches) {
+        if (t.identifier !== touchId) continue
+        // A quick tap without dragging is not steering: let the game use it (petting the horse)
+        const quick = performance.now() - start.t < 300
+        release()
+        if (quick && !moved) this._emit('tap', { x: t.clientX, y: t.clientY })
+      }
+    }
+    zone.addEventListener('touchend', end, { passive: false })
+    zone.addEventListener('touchcancel', end, { passive: false })
 
     const bindButton = (button, action) => {
       if (!button) return
       const press = (pressed) => (e) => {
         e.preventDefault()
+        if (pressed) haptic(6)
         this._keys[action] = pressed
         this._emit(action, pressed)
         button.classList.toggle('active', pressed)
@@ -177,8 +200,7 @@ export default class InputManager {
       button.addEventListener('touchcancel', press(false), { passive: false })
     }
 
-    bindButton(gallopBtn, 'gallop')
-    bindButton(interactBtn, 'interact')
+    bindButton(document.getElementById('touch-interact'), 'interact')
     bindButton(document.getElementById('touch-jump'), 'jump')
   }
 

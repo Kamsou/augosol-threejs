@@ -3,6 +3,13 @@ import { HORSE, WORLD_SIZE, JUMP } from '../utils/Constants.js'
 
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 const _forward = new THREE.Vector3()
+
+// Stick push (0.2–1) to speed: walk, then trot, then a snap to full gallop near the rim
+function throttleToSpeed(t) {
+  if (t >= 0.88) return HORSE.gallopSpeed
+  if (t < 0.55) return THREE.MathUtils.mapLinear(t, 0.2, 0.55, HORSE.walkSpeed * 0.6, HORSE.walkSpeed)
+  return THREE.MathUtils.mapLinear(t, 0.55, 0.88, HORSE.trotSpeed, HORSE.trotSpeed + 6)
+}
 const _yAxis = new THREE.Vector3(0, 1, 0)
 
 export default class HorseController {
@@ -77,13 +84,20 @@ export default class HorseController {
     if (this.frozen) return
 
     let targetSpeed = 0
-    if (this.input.isPressed('forward')) {
-      targetSpeed = this.input.isPressed('gallop')
-        ? HORSE.gallopSpeed
-        : HORSE.trotSpeed
-    }
-    if (this.input.isPressed('backward')) {
-      targetSpeed = -HORSE.walkSpeed * HORSE.backwardFactor
+    const analog = this.input.analog
+    if (analog?.active) {
+      // Touch stick: the push distance picks the gait continuously
+      if (analog.throttle > 0) targetSpeed = throttleToSpeed(analog.throttle)
+      else if (analog.throttle < -0.45) targetSpeed = -HORSE.walkSpeed * HORSE.backwardFactor
+    } else {
+      if (this.input.isPressed('forward')) {
+        targetSpeed = this.input.isPressed('gallop')
+          ? HORSE.gallopSpeed
+          : HORSE.trotSpeed
+      }
+      if (this.input.isPressed('backward')) {
+        targetSpeed = -HORSE.walkSpeed * HORSE.backwardFactor
+      }
     }
     targetSpeed = Math.min(targetSpeed, this.speedLimit)
 

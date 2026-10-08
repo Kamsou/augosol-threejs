@@ -15,6 +15,7 @@ import Toast from './ui/Toast.js'
 import PhotoMode from './ui/PhotoMode.js'
 import AudioManager from './core/AudioManager.js'
 import Profile from './core/Profile.js'
+import { haptic } from './utils/haptics.js'
 import HorseEmotes from './ui/HorseEmotes.js'
 import PensionMood from './world/PensionMood.js'
 import CourseHUD from './ui/CourseHUD.js'
@@ -108,6 +109,7 @@ export default class Experience {
         this.hud.show()
         if (this.inputManager.isMobile) {
           document.getElementById('touch-controls')?.classList.remove('hidden')
+          this._enterFullscreen()
         }
         this._startQuest1()
         setTimeout(() => {
@@ -143,13 +145,18 @@ export default class Experience {
   _setupInteractions() {
     const locationManager = this.world.locationManager
 
+    const touchInteract = document.getElementById('touch-interact')
     locationManager.on('approach', (info) => {
+      // The touch button lights up whenever a pension can be discovered
+      touchInteract?.classList.add('ready')
       if (this.locationInfoPanel.isVisible) return
       this.interactionPrompt.show(info.location.name)
       this.camera.setApproachMode(true)
+      haptic(10)
     })
 
     locationManager.on('leave', () => {
+      touchInteract?.classList.remove('ready')
       this.interactionPrompt.hide()
       this.camera.setApproachMode(false)
     })
@@ -251,6 +258,7 @@ export default class Experience {
 
     horse.onTakeoff = (speed) => {
       this.audio.whoosh()
+      haptic(12)
       world.dustSystem.burst(horse.mesh.position, 0.35 + speed / 60)
       this.camera.addFovKick(2 + speed / 10)
     }
@@ -259,6 +267,7 @@ export default class Experience {
       world.dustSystem.burst(horse.mesh.position, impact / 10)
       this.camera.addShake(Math.min(impact / 40, 0.35))
       this.audio.land(impact)
+      haptic(impact > 9 ? 28 : 16)
     }
 
     this.mood = new PensionMood(this)
@@ -267,6 +276,9 @@ export default class Experience {
       if (pressed && canPlay() && !this.photoMode.active) this._petHorse()
     })
     this._setupHorseTouch(canPlay)
+    this.inputManager.on('tap', ({ x, y }) => {
+      if (canPlay() && !this.photoMode.active && this._isOverHorse(x, y)) this._petHorse()
+    })
 
     this._setupCourse()
 
@@ -274,6 +286,7 @@ export default class Experience {
     this.hud.setCollectibles(0, collectibles.total)
     collectibles.on(({ collected, total }) => {
       this.audio.chime(collected - 1)
+      haptic(collected === total ? [20, 60, 20, 60, 40] : [12, 40, 18])
       this.hud.setCollectibles(collected, total)
       if (collected === total) {
         this.audio.fanfare()
@@ -301,6 +314,7 @@ export default class Experience {
         case 'start':
           this.courseHud.show(course.jumps.length)
           this.audio.go()
+          haptic([10, 70, 10])
           this.toast.show('C\'est parti !', `Franchissez les ${course.jumps.length} obstacles dans l'ordre`)
           break
         case 'clear':
@@ -311,6 +325,7 @@ export default class Experience {
         case 'knock': {
           if (e.counts) this.courseHud.mark(e.index - 1, 'knock')
           this.audio.knock()
+          haptic(45)
           const what = e.hind ? 'Touchée des postérieurs' : 'Barre tombée'
           this.emotes.say('alert', e.counts ? `${what} · +${COURSE.penalty} s` : what, 1600)
           break
@@ -400,6 +415,13 @@ export default class Experience {
         canvas.style.cursor = over ? 'pointer' : ''
       })
     }
+  }
+
+  // Android Chrome: go fullscreen on the start tap (iPhone Safari has no Fullscreen API for pages)
+  _enterFullscreen() {
+    const root = document.documentElement
+    if (document.fullscreenElement || !root.requestFullscreen) return
+    root.requestFullscreen({ navigationUI: 'hide' }).catch(() => {})
   }
 
   _enterPhoto() {

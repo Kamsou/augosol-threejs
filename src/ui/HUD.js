@@ -17,6 +17,8 @@ export default class HUD {
     this._lastGait = null
 
     this._setupCanvas()
+    // Its CSS size changes between portrait and landscape: re-measure the backing canvas
+    window.addEventListener('resize', () => this._setupCanvas())
   }
 
   setCollectibles(collected, total) {
@@ -30,7 +32,7 @@ export default class HUD {
 
   _setupCanvas() {
     if (!this._canvas) return
-    const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 2)
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const rect = this._canvas.parentElement.getBoundingClientRect()
     const cssSize = rect.width
     this._canvas.width = cssSize * dpr

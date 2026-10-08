@@ -110,6 +110,7 @@
           <span class="welcome-hint desktop-only">ou <kbd>Entrée</kbd></span>
         </div>
       </div>
+      <p class="welcome-touch-hint mobile-only">Un pouce pour diriger, l'autre pour sauter. Touchez votre cheval pour le caresser.</p>
     </div>
 
     <ol class="welcome-steps" aria-label="Votre mission">
@@ -223,40 +224,34 @@
   </div>
 
   <div id="touch-controls" class="touch-controls hidden">
-    <div id="joystick-zone" class="joystick-zone">
-      <div class="joystick-base" id="joystick-base">
-        <div class="joystick-thumb" id="joystick-thumb"></div>
-      </div>
+    <!-- Touch anywhere in this area: the stick appears under the thumb -->
+    <div id="steer-zone" class="steer-zone"></div>
+    <div id="joystick" class="joystick" aria-hidden="true">
+      <div class="joystick-gallop"></div>
+      <div class="joystick-base"></div>
+      <div class="joystick-thumb" id="joystick-thumb"></div>
     </div>
+    <div id="steer-hint" class="steer-hint" aria-hidden="true">
+      <span class="steer-hint-finger"></span>
+      <span class="steer-hint-text">Glissez pour avancer<br><em>poussez loin pour galoper</em></span>
+    </div>
+
     <div class="touch-buttons">
-      <div class="touch-btn-group">
-        <button id="touch-gallop" class="touch-btn touch-gallop">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M13 2L9 10h5l-4 10 8-12h-5l4-8z" fill="currentColor" opacity="0.85" />
-          </svg>
-        </button>
-        <span class="touch-btn-label">Galop</span>
-      </div>
-      <div class="touch-btn-group">
-        <button id="touch-jump" class="touch-btn touch-jump">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 17c3-8 13-8 16 0" />
-            <path d="M11 3v6M8 6l3-3 3 3" />
-          </svg>
-        </button>
+      <button id="touch-interact" class="touch-btn touch-interact" aria-label="Découvrir la pension">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 10.5L12 4l9 6.5V20a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z" />
+        </svg>
+        <span class="touch-btn-label">Découvrir</span>
+      </button>
+      <button id="touch-jump" class="touch-btn touch-jump" aria-label="Sauter">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 18c3.5-8 14.5-8 18 0" />
+          <path d="M12 3v7M8.5 6.5L12 3l3.5 3.5" />
+        </svg>
         <span class="touch-btn-label">Saut</span>
-      </div>
-      <div class="touch-btn-group">
-        <button id="touch-interact" class="touch-btn touch-interact">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none" />
-            <path d="M5 19c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-              fill="none" />
-          </svg>
-        </button>
-        <span class="touch-btn-label">Interagir</span>
-      </div>
+      </button>
     </div>
   </div>
 

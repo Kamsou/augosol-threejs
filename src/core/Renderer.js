@@ -30,7 +30,8 @@ export default class Renderer {
     this._smoothSpeed = 0
     this._elapsed = 0
 
-    this._maxPixelRatio = Math.min(this.sizes.pixelRatio, isMobile ? 1 : 2)
+    // Phones get a sharper 1.5x; dynamic resolution steps down if the GPU can't keep up
+    this._maxPixelRatio = Math.min(this.sizes.pixelRatio, isMobile ? 1.5 : 2)
     this._minPixelRatio = isMobile ? 0.75 : 1
     this.pixelRatio = this._maxPixelRatio
     this._ceiling = this._maxPixelRatio
@@ -142,7 +143,7 @@ export default class Renderer {
   }
 
   resize() {
-    this._maxPixelRatio = Math.min(this.sizes.pixelRatio, isMobile ? 1 : 2)
+    this._maxPixelRatio = Math.min(this.sizes.pixelRatio, isMobile ? 1.5 : 2)
     this.pixelRatio = Math.min(this.pixelRatio, this._maxPixelRatio)
     this.instance.setSize(this.sizes.width, this.sizes.height)
     if (this.composer) this.composer.setSize(this.sizes.width, this.sizes.height)
