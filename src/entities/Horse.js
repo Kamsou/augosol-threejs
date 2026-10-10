@@ -62,7 +62,6 @@ const PET_POOL = [ANIM.pet, ANIM.pet2, ANIM.pet3, ANIM.pet4]
 // the airborne part of the clip is stretched to match the physics flight exactly
 const JUMP_CLIPS = [
   { name: ANIM.jumpGallop, takeoff: 0.18, landing: 1.08 },
-  { name: ANIM.jumpSprint, takeoff: 0.15, landing: 1.2, minSpeed: 20 },
 ]
 const PUSH_OFF = 0.07
 const CONTENT_POOL = [ANIM.fidget3, ANIM.fidget7, ANIM.fidget8]
@@ -314,7 +313,8 @@ export default class Horse {
     const minTakeoff = HORSE.trotSpeed * 0.75
     if (this.controller.speed < minTakeoff) this.controller.speed = minTakeoff
     const speed = this.controller.speed
-    const def = speed > 20 ? JUMP_CLIPS[1] : JUMP_CLIPS[0]
+    // One clip for every gait: the sprint variant stretches the body too much for a capped flight
+    const def = JUMP_CLIPS[0]
 
     this.controller.jump()
     const action = this._actions[def.name]

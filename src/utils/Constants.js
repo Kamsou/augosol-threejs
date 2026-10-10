@@ -163,9 +163,12 @@ export const COLLECTIBLES = {
 }
 
 export const JUMP = {
-  // Take-off speed grows with the gait: a hop at the walk, a real leap at the gallop
-  minVelocity: 9.5,
-  maxVelocity: 11.5,
+  // Nearly the same height whatever the gait (the trot jump is the reference)
+  minVelocity: 10,
+  maxVelocity: 10.6,
+  // A horse collects itself before a fence: horizontal speed in the air is capped, so a
+  // gallop jump spans ~2 horse lengths like a trot jump instead of 4
+  maxFlightSpeed: 17,
   // Snappy arc: about half a second in the air, apex 1.2–1.8 above the ground
   gravity: 36,
   // Pressing jump this long before touching down still triggers a jump on landing

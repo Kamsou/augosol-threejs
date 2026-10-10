@@ -57,10 +57,17 @@ export default class HorseController {
     return (2 * this.jumpVelocity) / JUMP.gravity
   }
 
+  // Horizontal speed the horse keeps in the air for a jump started now
+  get flightSpeed() {
+    return Math.min(Math.abs(this.speed), JUMP.maxFlightSpeed)
+  }
+
   jump() {
     if (this.frozen || this.airborne) return false
     this.airborne = true
     this._jumpVel = this.jumpVelocity
+    // Collect before the fence; the gait picks the speed back up after landing
+    this.speed = Math.sign(this.speed || 1) * this.flightSpeed
     return true
   }
 

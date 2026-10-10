@@ -8,7 +8,7 @@ const REARM_DISTANCE = 9
 // Hooves must be this high when the forelegs pass over the pole...
 const FRONT_CLEARANCE = 0.75
 // ...and still off the ground when the hind legs follow, a body length later
-const HIND_OFFSET = 3.6
+const HIND_OFFSET = 2.6
 // Poles are judged where the chest is, not at the centre of the horse
 const CHEST_REACH = 1.8
 const HIND_CLEARANCE = 0.2

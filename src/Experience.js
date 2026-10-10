@@ -356,13 +356,16 @@ export default class Experience {
   _requestJump() {
     const horse = this.world.horse
     const controller = horse.controller
-    const speed = Math.max(Math.abs(controller.speed), HORSE.trotSpeed)
+    // Until take-off the horse still runs at its gait; in the air it flies at the collected speed
+    const approach = Math.max(Math.abs(controller.speed), HORSE.trotSpeed * 0.75)
+    const flight = Math.min(approach, JUMP.maxFlightSpeed)
     const distance = this.world.course.poleAhead(horse.mesh.position, controller.currentRotation)
     let delay = 0
     if (distance !== null && !controller.airborne) {
-      // Distance is measured from the centre; the forelegs are ~1.8 ahead and should peak over the pole
-      const apex = (speed * controller.airTime) / 2
-      const wait = (distance - 1.8 - apex * 0.8) / speed
+      // Best take-off: the forelegs (~1.8 ahead of the centre) ~40% into the leap before the pole,
+      // so both the fore and hind legs clear it
+      const span = flight * controller.airTime
+      const wait = (distance - 1.8 - span * 0.42) / approach
       if (wait > 0.02 && wait <= JUMP.maxAssistDelay) delay = wait
     }
     horse.requestJump(delay)
