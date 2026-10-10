@@ -3,6 +3,10 @@ import { HORSE, WORLD_SIZE, JUMP } from '../utils/Constants.js'
 
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 const _forward = new THREE.Vector3()
+// Body tilt per unit of vertical speed during a jump; small, the jump clip already arches the back
+const JUMP_TILT = 0.009
+// After touching down, speed eases back to the gait instead of braking hard
+const LANDING_EASE = 0.6
 
 // Stick push (0.2–1) to speed: walk, then trot, then a snap to full gallop near the rim
 function throttleToSpeed(t) {
@@ -33,6 +37,7 @@ export default class HorseController {
     this.speedLimit = Infinity
     this._jumpY = 0
     this._jumpVel = 0
+    this._landingEase = 0
 
     horse.mesh.rotation.order = 'YXZ'
   }
@@ -68,6 +73,7 @@ export default class HorseController {
       this._jumpY = 0
       this._jumpVel = 0
       this.airborne = false
+      this._landingEase = LANDING_EASE
       this.onLand?.(impact)
     }
   }
@@ -103,7 +109,11 @@ export default class HorseController {
 
     // No traction mid-air: the leap keeps its momentum until the hooves touch down
     if (!this.airborne) {
-      const rate = (targetSpeed > this.speed ? HORSE.acceleration : HORSE.deceleration) * dt
+      let rate = (targetSpeed > this.speed ? HORSE.acceleration : HORSE.deceleration) * dt
+      if (this._landingEase > 0) {
+        this._landingEase -= dt
+        if (targetSpeed < this.speed) rate *= 0.25
+      }
       this.speed = THREE.MathUtils.lerp(this.speed, targetSpeed, Math.min(rate, 1))
 
       if (Math.abs(this.speed) < 0.5 && targetSpeed === 0) {
@@ -155,8 +165,10 @@ export default class HorseController {
       this._updateJump(dt)
       mesh.position.y = this._smoothY + this._jumpY
 
+      // Same smoothed take-off / landing tilt as desktop (no terrain pitch on phones)
+      this._smoothPitch = THREE.MathUtils.lerp(this._smoothPitch, this._jumpVel * JUMP_TILT, 6 * dt)
       mesh.rotation.y = this.currentRotation
-      mesh.rotation.x = this._jumpVel * 0.02
+      mesh.rotation.x = this._smoothPitch
     } else {
       _forward.set(0, 0, -1).applyAxisAngle(_yAxis, this.currentRotation)
       const fx = cx + _forward.x * 1.2
@@ -181,8 +193,8 @@ export default class HorseController {
 
       const slopeDelta = hFront - hBack
       // Nose up on take-off, down on the way back to the ground
-      const targetPitch = Math.atan2(slopeDelta, 2.4) + this._jumpVel * 0.022
-      this._smoothPitch = THREE.MathUtils.lerp(this._smoothPitch, targetPitch, 4 * dt)
+      const targetPitch = Math.atan2(slopeDelta, 2.4) + this._jumpVel * JUMP_TILT
+      this._smoothPitch = THREE.MathUtils.lerp(this._smoothPitch, targetPitch, 6 * dt)
 
       mesh.rotation.y = this.currentRotation
       mesh.rotation.x = this._smoothPitch

@@ -310,9 +310,9 @@ export default class Horse {
     // Once landed, a new leap may cut the end of the previous one (jumps in a row)
     if (this._oneShot && !this._oneShot.interruptible && this._oneShot.kind !== 'jump') return false
 
-    if (this.controller.speed < HORSE.trotSpeed * 0.8) {
-      this.controller.speed = HORSE.trotSpeed
-    }
+    // A slow horse needs a little momentum to leave the ground, not a full trot
+    const minTakeoff = HORSE.trotSpeed * 0.75
+    if (this.controller.speed < minTakeoff) this.controller.speed = minTakeoff
     const speed = this.controller.speed
     const def = speed > 20 ? JUMP_CLIPS[1] : JUMP_CLIPS[0]
 
@@ -429,6 +429,11 @@ export default class Horse {
     if (this._oneShot) {
       const shot = this._oneShot
       shot.elapsed += dt
+      // The clip's landing strides would keep galloping after touchdown: hand back to the gait soon
+      if (shot.kind === 'jump' && !this.controller.airborne && shot.elapsed > 0.2) {
+        shot.landed = (shot.landed || 0) + dt
+        if (shot.landed > 0.18) shot.duration = 0
+      }
       const wantsToMove = this.controller.input.isPressed('forward') || this.controller.input.isPressed('backward')
       if (shot.elapsed >= shot.duration || (shot.interruptible && (wantsToMove || speed > 1))) {
         this._endOneShot()
